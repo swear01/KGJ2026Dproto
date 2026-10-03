@@ -554,7 +554,8 @@
     const rx=point.x-body.x,ry=point.y-body.y;
     const normalSpeed=(body.vx-body.omega*ry)*nx+(body.vy+body.omega*rx)*ny;
     if(normalSpeed<0) {
-      const lever=rx*ny-ry*nx,e=normalSpeed < -28?(roofBounce&&ny>.7?.9:bounce):0;
+      const hardRoof=roofBounce&&ny>.7&&normalSpeed < -28;
+      const lever=rx*ny-ry*nx,e=normalSpeed < -28?(hardRoof?.9:bounce):0;
       const impulse=-(1+e)*normalSpeed/(1+lever*lever/inertia);
       body.vx+=impulse*nx;body.vy+=impulse*ny;body.omega+=lever*impulse/inertia;
       const tx=-ny,ty=nx,tangent=(body.vx-body.omega*ry)*tx+(body.vy+body.omega*rx)*ty;
@@ -565,11 +566,11 @@
         const correction=-closing/(1+lever*lever/inertia);
         body.vx+=correction*nx;body.vy+=correction*ny;body.omega+=lever*correction/inertia;
       }
-      if(roofBounce&&ny>.7&&normalSpeed< -28&&body.vx*nx+body.vy*ny>10) {
+      if(hardRoof) {
         body.reboundTime=.35;body.reboundNx=nx;body.reboundNy=ny;
         if(impacts.length<12)impacts.push({x:point.x,y:point.y,nx,ny,life:.32,strength:Math.min(1,-normalSpeed/220)});
       }
-      if(wall&&normalSpeed < -55&&impacts.length<12)impacts.push({x:point.x,y:point.y,nx,ny,life:.32,strength:Math.min(1,-normalSpeed/220)});
+      if(wall&&!hardRoof&&normalSpeed < -55&&impacts.length<12)impacts.push({x:point.x,y:point.y,nx,ny,life:.32,strength:Math.min(1,-normalSpeed/220)});
     }
     const lever=rx*ny-ry*nx,correction=(depth+.01)/(1+lever*lever/inertia);
     body.angle+=clamp(lever*correction/inertia,-.12,.12);

@@ -303,21 +303,32 @@ const { chromium } = require('playwright');
     await page.locator('#reset').click();
     assert.equal((await state()).body.y, 6600);
 
+    const cornerRebound=await page.evaluate(()=>{
+      const plane=[{x:200,y:4900},{x:440,y:4900},{x:440,y:4990},{x:200,y:4990}];
+      flowTest.seedBody({x:320,y:4995,vy:-180,angle:-.8,omega:0});
+      const before=flowTest.state.body;
+      flowTest.collidePolygon(plane,.3,.22);
+      const after=flowTest.state.body,energy=b=>(b.vx**2+b.vy**2+flowTest.inertia*b.omega**2)/2;
+      return {before,after,energyBefore:energy(before),energyAfter:energy(after)};
+    });
+    assert(cornerRebound.after.reboundTime>0&&cornerRebound.after.vy<10&&Math.abs(cornerRebound.after.omega)>1&&cornerRebound.energyAfter<=cornerRebound.energyBefore+1e-6,`A strong off-center roof impact must arm the rebound interval even when energy becomes rotation instead of center-of-mass retreat: ${JSON.stringify(cornerRebound)}`);
+
     const ceiling=await page.evaluate(()=>{
-      return [-.8,-.25,0,.5].map(angle=>{
+      return [-.8,-.25,0,.5,Math.PI/2].map(angle=>{
         flowTest.seedDuo([{x:180,y:226,vy:-220,angle},{x:440,y:810}]);flowTest.input(true);
-        let impact=null,retreat=0,clear=true;
+        let impact=null,retreat=0,peakVy=0,clear=true,heldThroughout=true;
         for(let i=0;i<90;i++) {
           flowTest.advance(1/120);const s=flowTest.state,b=s.bodies[0];
+          heldThroughout=heldThroughout&&s.held&&s.breathPhase==='exhale';
           if(b.reboundTime>0&&!impact)impact={y:b.y,vy:b.vy,phase:s.breathPhase};
-          if(impact)retreat=Math.max(retreat,b.y-impact.y);
+          if(impact){retreat=Math.max(retreat,b.y-impact.y);peakVy=Math.max(peakVy,b.vy);}
           const points=flowTest.bodyPoints(b);
           for(let j=0;j<points.length;j++){const a=points[j],b=points[(j+1)%points.length];for(const t of [0,.25,.5,.75])if(flowTest.inSolid(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t))clear=false;}
         }
-        return {angle,impact,retreat,clear,held:flowTest.state.held};
+        return {angle,impact,retreat,peakVy,clear,held:heldThroughout};
       });
     });
-    assert(ceiling.every(s=>s.impact&&s.impact.vy>25&&s.impact.phase==='exhale'&&s.retreat>20&&s.clear&&s.held),'Ordinary horizontal concha undersides must return every tested orientation to the cavity while exhale remains held, without penetration');
+    assert(ceiling.every(s=>s.impact&&s.peakVy>25&&s.impact.phase==='exhale'&&s.retreat>(s.angle===Math.PI/2?10:20)&&s.clear&&s.held),`Ordinary horizontal concha undersides must return every tested orientation to the cavity while exhale remains held, without penetration: ${JSON.stringify(ceiling)}`);
 
     const duoChecks=await page.evaluate(()=>{
       const input=value=>window.dispatchEvent(new KeyboardEvent(value?'keydown':'keyup',{code:'Space'}));
