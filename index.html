@@ -107,7 +107,7 @@
 </head>
 <body>
 <div class="shell">
-  <header><div class="brand"><span class="mark">≈</span> FAUST GAME JAM</div><div class="prototype">ONE BUTTON / PROTOTYPE 10</div></header>
+  <header><div class="brand"><span class="mark">≈</span> FAUST GAME JAM</div><div class="prototype">ONE BUTTON / PROTOTYPE 11</div></header>
   <main>
     <section class="stage" aria-label="從肺部到鼻腔的長途關卡">
       <canvas id="game" aria-label="按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。">請使用支援 Canvas 的瀏覽器。</canvas>
@@ -445,15 +445,24 @@
     const left=support(1,0),right=support(-1,0);
     if(body.x-left.distance<100)hit=resolve(1,0,100-body.x+left.distance,left,.58,.12,true)||hit;
     if(body.x+right.distance>540)hit=resolve(-1,0,body.x+right.distance-540,right,.58,.12,true)||hit;
-    for(const o of duoSolids())if(collidePolygon(o.points,o.fish?.42:.28,o.fish?.25:.35)) {hit=true;if(o.fish)prick();}
+    for(const o of duoSolids())if(collidePolygon(o.points,o.fish?.42:.28,o.fish?.25:.35,!o.fish)) {hit=true;if(o.fish)prick();}
     const bottom=support(0,-1);
     if(body.y+bottom.distance>900){resolve(0,-1,body.y+bottom.distance-900,bottom,.3,.2,true);hit=true;if(elapsed>3)fail('fell');}
     if(hit){if(contact<=0){collisions++;bumpFlash=.22;}contact=.12;}
   }
+  function applyAirDrag(b,wind,rate,dt) {
+    b.reboundTime=Math.max(0,(b.reboundTime||0)-dt);
+    let dx=wind.x-b.vx,dy=wind.y-b.vy;
+    if(b.reboundTime>0) {
+      const towardWall=dx*b.reboundNx+dy*b.reboundNy;
+      if(towardWall<0){dx-=towardWall*b.reboundNx*.88;dy-=towardWall*b.reboundNy*.88;}
+    }
+    b.vx+=dx*rate*dt;b.vy+=dy*rate*dt;
+  }
   function stepDuo(dt) {
     for(const b of bodies)if(!b.escaped) {
       const wind=duoVelocity(b.x,b.y),drag=2.7*b.size**2/b.mass;
-      b.vx+=(wind.x-b.vx)*drag*dt;b.vy+=((wind.y-b.vy)*drag+42)*dt;
+      applyAirDrag(b,wind,drag,dt);b.vy+=42*dt;
       b.omega*=Math.exp(-.65*dt);b.angle+=b.omega*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;
     }
     let touched=false;
@@ -503,7 +512,10 @@
     stickerTag('35 · 窄面通過',285,286,art.paper);
     stickerTag('↓ 吸氣 · 退回換角',286,575,art.cyan);
     stickerTag('匯流：會互相碰撞',320,615,art.paper);
-    for(const b of bodies)if(!b.escaped)drawCharacter(b);
+    for(const b of bodies)if(!b.escaped) {
+      drawCharacter(b);
+      if(b.reboundTime>0){ctx.beginPath();ctx.arc(b.x,b.y,BR*b.size+8,0,Math.PI*2);ctx.strokeStyle=art.cyan;ctx.lineWidth=3;ctx.globalAlpha=b.reboundTime/.35;ctx.stroke();ctx.globalAlpha=1;}
+    }
     ctx.font='900 16px system-ui';ctx.textAlign='center';inkText('黃 · 大 / 重',200,867,art.yellow);inkText('粉 · 小 / 輕',440,867,art.pink);
     inkText('肺底 · 掉下去會失敗',320,928,art.paper);
     ctx.font='900 13px system-ui';inkText('魚刺 ⚠',486,651,art.paper);
@@ -536,13 +548,14 @@
     }
     return false;
   }
-  function resolve(nx,ny,depth,point,bounce=.45,friction=.16,wall=false) {
+  function resolve(nx,ny,depth,point,bounce=.45,friction=.16,wall=false,roofBounce=true) {
     const inertia=bodyInertia(body);
     if(depth<=0)return false;
     const rx=point.x-body.x,ry=point.y-body.y;
     const normalSpeed=(body.vx-body.omega*ry)*nx+(body.vy+body.omega*rx)*ny;
     if(normalSpeed<0) {
-      const lever=rx*ny-ry*nx,e=normalSpeed < -28?bounce:0;
+      const hardRoof=roofBounce&&ny>.7&&normalSpeed < -28;
+      const lever=rx*ny-ry*nx,e=normalSpeed < -28?(hardRoof?.9:bounce):0;
       const impulse=-(1+e)*normalSpeed/(1+lever*lever/inertia);
       body.vx+=impulse*nx;body.vy+=impulse*ny;body.omega+=lever*impulse/inertia;
       const tx=-ny,ty=nx,tangent=(body.vx-body.omega*ry)*tx+(body.vy+body.omega*rx)*ty;
@@ -553,7 +566,11 @@
         const correction=-closing/(1+lever*lever/inertia);
         body.vx+=correction*nx;body.vy+=correction*ny;body.omega+=lever*correction/inertia;
       }
-      if(wall&&normalSpeed < -55&&impacts.length<12)impacts.push({x:point.x,y:point.y,nx,ny,life:.32,strength:Math.min(1,-normalSpeed/220)});
+      if(hardRoof) {
+        body.reboundTime=.35;body.reboundNx=nx;body.reboundNy=ny;
+        if(impacts.length<12)impacts.push({x:point.x,y:point.y,nx,ny,life:.32,strength:Math.min(1,-normalSpeed/220)});
+      }
+      if(wall&&!hardRoof&&normalSpeed < -55&&impacts.length<12)impacts.push({x:point.x,y:point.y,nx,ny,life:.32,strength:Math.min(1,-normalSpeed/220)});
     }
     const lever=rx*ny-ry*nx,correction=(depth+.01)/(1+lever*lever/inertia);
     body.angle+=clamp(lever*correction/inertia,-.12,.12);
@@ -561,7 +578,7 @@
     body.x+=nx*remaining;body.y+=ny*remaining;
     return true;
   }
-  function collidePolygon(points,bounce=.3,friction=.22) {
+  function collidePolygon(points,bounce=.3,friction=.22,roofBounce=true) {
     const shape=bodyPoints();let near=null,crossed=null;
     for(let i=0,j=points.length-1;i<points.length;j=i++) {
       const a=points[j],b=points[i],dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
@@ -581,7 +598,7 @@
       const len=Math.hypot(p.dx,p.dy),sign=area>0?1:-1;nx=p.dy/len*sign;ny=-p.dx/len*sign;
     }
     const point=support(nx,ny,shape);
-    return resolve(nx,ny,point.distance+(inside?p.d:-p.d),point,bounce,friction);
+    return resolve(nx,ny,point.distance+(inside?p.d:-p.d),point,bounce,friction,false,roofBounce);
   }
   function collideRect(rect) {
     return collidePolygon([{x:rect.x,y:rect.y},{x:rect.x+rect.w,y:rect.y},
@@ -617,7 +634,7 @@
       for(const o of obstacles)if(Math.abs(body.y-o.y)<BR+(o.kind==='neck'?250:110)) {
         if(o.kind==='shelf') {
           const shapes=o.material==='fishbone'?fishbonePieces(o):(o.material==='turbinate'?['left','right']:['left']).map(lane=>shelfShape(o,lane));
-          for(const shape of shapes)if(collidePolygon(shape,o.material==='fishbone'?.42:.38,o.material==='fishbone'?.25:.22)) {hit=true;if(o.material==='fishbone')prick();}
+          for(const shape of shapes)if(collidePolygon(shape,o.material==='fishbone'?.42:.38,o.material==='fishbone'?.25:.22,o.material!=='fishbone')) {hit=true;if(o.material==='fishbone')prick();}
         }else if(o.kind==='neck') {for(const shape of neckShapes(o))if(collidePolygon(shape,.28,.45))hit=true;}
         else if(o.kind==='gate') {for(const shape of vocalShapes(o))if(collidePolygon(shape,.25,.2))hit=true;}
         else for(const rect of blocks(o))if(collideRect(rect))hit=true;
@@ -719,9 +736,9 @@
     if(duoMode){stepDuo(dt);return;}
     if(body.y>1650)nasalLane=body.x<center(1650)?'left':'right';
     const wind=velocityAt(body.x,body.y);
-    body.vx+=(wind.x-body.vx)*2.7*dt;
+    applyAirDrag(body,wind,2.7,dt);
     const swallowed=inEsophagus(body.x,body.y)&&body.x>bounds(body.y)[1]+18;
-    body.vy+=((wind.y-body.vy)*2.7+42+(swallowed?150:0))*dt;
+    body.vy+=(42+(swallowed?150:0))*dt;
     body.omega*=Math.exp(-.65*dt);body.angle+=body.omega*dt;
     body.x+=body.vx*dt;body.y+=body.vy*dt;collide();
     for(const o of obstacles)if(body.y<o.y-(o.kind==='neck'?145:80))cleared.add(o.id);
