@@ -321,6 +321,13 @@ const { chromium } = require('playwright');
       return {hit,clear};
     });
     assert(valveCorner.hit&&valveCorner.clear,'The small rotated outline must resolve an actual membrane corner overlap');
+    const separatedCamera=await page.evaluate(()=>{
+      flowTest.startDuo();const lower=flowTest.state.bodies[0];
+      flowTest.seedDuo([lower,{x:flowTest.center(3000),y:3000}]);flowTest.advance(2);
+      const s=flowTest.state;
+      return {failed:s.failed,camera:s.camera,view:s.viewHeight,bodies:s.bodies,visible:s.bodies.every(b=>flowTest.bodyPoints(b).every(p=>p.y>s.camera&&p.y<s.camera+s.viewHeight))};
+    });
+    assert(!separatedCamera.failed&&separatedCamera.visible,`The camera must contain both full outlines when they are widely separated: ${JSON.stringify(separatedCamera)}`);
     const sharedContact=await page.evaluate(()=>{
       const neck=flowTest.obstacles.find(o=>o.id==='neck'),x=flowTest.center(neck.y)-12;
       flowTest.seedDuo([{x,y:neck.y+104},{x,y:neck.y+140}]);flowTest.input(true);

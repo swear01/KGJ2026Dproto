@@ -446,7 +446,7 @@
     const low=Math.max(...live.map(b=>b.y),EXIT),high=Math.min(...live.map(b=>b.y),low);
     const targetView=Math.min(H,Math.max([1480,960,1180,1380][regionIndex(body.y)],low-high+360));
     viewHeight+=(targetView-viewHeight)*Math.min(1,dt*3);
-    camera+=(clamp((low+high)/2-viewHeight*.55,0,H-viewHeight)-camera)*Math.min(1,dt*5);
+    camera+=(clamp((low+high)/2-viewHeight*.5,0,H-viewHeight)-camera)*Math.min(1,dt*5);
     if(bodies.every(b=>b.escaped)&&!failed)finish();
   }
   function drawCharacter(b) {

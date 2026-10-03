@@ -60,7 +60,7 @@ Prototype 13 沿用最新貼紙卡通美術：成簇肺泡、青綠軟骨環、�
 
 `art` 定義共用描線、白邊與角色／氣流色；`regions[].color` 定義四個器官色，CSS `:root` 管理介面色。`stickerShape()` 直接使用原有多邊形繪圖，角色表情和白色描邊均為裝飾，不改變碰撞輪廓。所有素材仍為原生 Canvas／CSS，沒有外部字型、圖片或新增套件。
 
-畫面、地形與碰撞皆由原生 Canvas / JavaScript 產生。`profiles` 定義通道輪廓；`obstacles` 定義障礙位置、側面缺口和薄膜的吸氣區間。`structures`、`shelfShape()`、`fishbonePieces()`、`neckShapes()` 與 `vocalShapes()` 的多邊形由繪圖和碰撞共用。`branchEdge` 定義食道的實體邊界，`rightOutline` 把它接入主氣道輪廓；`inAirway()` 檢查兩條路的聯集，粒子遮擋也採用同一幾何。`prick()` 管理魚刺刺激與冷卻，`fail()` 管理三種失敗。鏡頭高度會依部位平滑縮放；標準鏡頭高度 `VIEW` 與地圖高度 `H` 分開。
+畫面、地形與碰撞皆由原生 Canvas / JavaScript 產生。`profiles` 定義通道輪廓；`obstacles` 定義障礙位置、側面缺口和薄膜的吸氣區間。`structures`、`shelfShape()`、`fishbonePieces()`、`neckShapes()` 與 `vocalShapes()` 的多邊形由繪圖和碰撞共用。`branchEdge` 定義食道的實體邊界，`rightOutline` 把它接入主氣道輪廓；`inAirway()` 檢查兩條路的聯集，粒子遮擋也採用同一幾何。`prick()` 管理魚刺刺激與冷卻，`fail()` 管理三種失敗。鏡頭高度會依部位平滑縮放；標準鏡頭高度 `VIEW` 與地圖高度 `H` 分開。雙異物鏡頭以兩者高度中點置中，並依間距拉遠，為兩端保留視野餘量。
 
 氣流使用遊戲用的解析流場近似：`channel()` 依分岔與缺口彎曲，`stream()` 加入障礙附近的渦流與肺部局部回流，`velocityAt()` 從流函數求出水平／垂直速度，再乘上平滑變化的呼吸氣壓。整體吐氣仍流向出口，但局部可橫向、彎曲甚至向下。`step()` 用相對氣流的阻力加速異物，保留慣性與重力；吸氣不直接改寫位置或指定橫移。粒子使用同一流場，保留軌跡，途中遇到實體會重新生成，避免穿過薄魚刺。這是可調整的遊戲近似，沒有求解完整流體方程。
 
