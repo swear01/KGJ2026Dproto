@@ -20,13 +20,10 @@
   .stage { position: relative; min-width: 0; height: min(760px, calc(100dvh - 140px)); min-height: 490px; border: 5px solid var(--paper); border-radius: 24px; box-shadow: 0 0 0 3px var(--ink), 8px 9px 0 #6525a988; overflow: hidden; background: #351572; }
   canvas { width: 100%; height: 100%; display: block; touch-action: none; }
   .stage-tag { position: absolute; left: 16px; top: 14px; padding: 4px 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); color: var(--ink); font-size: 10px; font-weight: 900; letter-spacing: .1em; pointer-events: none; box-shadow: 3px 3px 0 #37116a66; }
-  .stage-foot { position: absolute; left: 16px; bottom: 14px; max-width: calc(100% - 32px); padding: 4px 9px; border: 2px solid #fff9ff99; border-radius: 9px; background: #37116ae8; color: var(--paper); font-size: 11px; pointer-events: none; }
   aside { display: flex; flex-direction: column; padding: 18px 18px 14px; border: 4px solid var(--paper); border-radius: 24px; background: #6427bc; box-shadow: 0 0 0 3px var(--ink), 7px 8px 0 #6525a988; }
-  .eyebrow { color: var(--aqua); font-size: 10px; font-weight: 900; letter-spacing: .12em; margin: 0 0 12px; }
   h1 { font: 1000 clamp(54px, 5.8vw, 76px)/.95 'Arial Rounded MT Bold', system-ui, sans-serif; letter-spacing: -.065em; margin: 0 0 18px -3px; color: var(--lime); -webkit-text-stroke: 2px var(--paper); paint-order: stroke fill; text-shadow: 4px 5px 0 var(--ink); transform: rotate(-3deg); }
   h1 span { display: block; color: var(--pink); }
   .subtitle { font-size: 22px; font-weight: 900; letter-spacing: .1em; margin: 0 0 12px; }
-  .intro { color: var(--paper); margin: 0; font-size: 12px; }
   .organ-feel { color: var(--aqua); font-size: 11px; margin: 10px 0 0; }
   .route { display: flex; justify-content: space-between; gap: 5px; margin-top: 17px; color: var(--paper); font-size: 10px; font-weight: 800; }
   .route span { padding: 3px 0; border: 2px solid #bb83f0; border-radius: 8px; flex: 1; text-align: center; }
@@ -46,7 +43,6 @@
   .overlay.failure .big { color: var(--pink); }
   .breath-state { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 800; color: var(--aqua); min-height: 30px; }
   .dot { width: 9px; height: 9px; flex-shrink: 0; border: 2px solid var(--paper); border-radius: 50%; background: currentColor; }
-  #hint { font-size: 11px; color: var(--paper); min-height: 40px; margin: 8px 0 16px; }
   .controls { margin-top: auto; }
   #breath { width: 100%; background: var(--lime); color: var(--ink); border: 4px solid var(--paper); border-radius: 17px; box-shadow: 0 0 0 2px var(--ink), 0 6px 0 var(--ink); padding: 12px 10px; touch-action: none; user-select: none; -webkit-user-select: none; transition: background .15s, transform .1s; }
   #breath.active { background: var(--pink); transform: translateY(3px); box-shadow: 0 0 0 2px var(--ink), 0 3px 0 var(--ink); }
@@ -76,23 +72,20 @@
     h1 { font-size: 50px; }
     .subtitle { font-size: 17px; }
     .stats { margin-top: 18px; }
-    .stage-tag, .stage-foot { left: 10px; font-size: 8px; }
+    .stage-tag { left: 10px; font-size: 8px; }
   }
   @media (max-width: 520px) {
     main { display: flex; flex-direction: column; gap: 15px; }
     .stage { order: 1; height: min(46dvh, 500px); min-height: 280px; border-width: 4px; border-radius: 19px; }
     aside { display: contents; }
     .title-block { order: 0; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 0 15px; color: var(--ink); }
-    h1 { font-size: 39px; margin: 0; grid-row: 1 / 4; }
-    .eyebrow { margin: 0; font-size: 8px; color: var(--ink); }
+    h1 { font-size: 39px; margin: 0; }
     .subtitle { margin: 0; font-size: 16px; }
-    .intro { font-size: 10px; color: var(--ink); }
     .route, .organ-feel { display: none; }
     .stats { order: 2; margin: 0; padding: 10px 12px; border: 3px solid var(--paper); border-radius: 15px; background: #6427bc; display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; box-shadow: 3px 3px 0 var(--ink); }
     .track { margin: 7px 0 6px; height: 8px; }
     .number { font-size: 22px; }
     .breath-state { font-size: 10px; min-height: 22px; }
-    #hint { grid-column: 1 / -1; min-height: 22px; margin: 0; font-size: 10px; }
     .controls { order: 3; position: sticky; bottom: 0; background: #c894f3; padding: 7px 2px 10px; border-radius: 15px 15px 0 0; }
     #breath { padding: 9px; border-width: 3px; }
     #breath strong { font-size: 17px; }
@@ -101,7 +94,6 @@
     #reset, #time { color: var(--ink); }
     footer { margin-top: 5px; font-size: 8px; }
     .stage-tag { padding: 2px 7px; top: 9px; }
-    .stage-foot { bottom: 9px; padding: 2px 5px; max-width: calc(100% - 20px); }
   }
 </style>
 </head>
@@ -112,28 +104,25 @@
     <section class="stage" aria-label="從肺部到鼻腔的長途關卡">
       <canvas id="game" aria-label="按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。">請使用支援 Canvas 的瀏覽器。</canvas>
       <div class="stage-tag" id="area">01 / 肺部 · LUNGS</div>
-      <div class="stage-foot" id="stage-hint">向上吐氣。前面有東西擋著。</div>
       <div class="overlay" id="win" hidden role="dialog" aria-modal="true" aria-labelledby="win-title">
-        <div class="eyebrow" id="ending-label">YOU CAN BREATHE AGAIN.</div>
-        <div class="big" id="win-title">自由了。</div>
-        <p id="result"></p><button id="again">再呼吸一次 ↻</button>
+        <div class="big" id="win-title">通關</div>
+        <p id="result"></p><button id="again">↻ 重試</button>
       </div>
     </section>
     <aside>
-      <div class="title-block"><p class="eyebrow">A LONG WAY TO FREEDOM.</p><h1>FREE<span>FLOW.</span></h1><p class="subtitle" id="subtitle">一口自由</p><p class="intro">從肺部，一路到鼻腔。<br>每個阻礙，都需要不同的一口氣。</p></div>
-      <p class="organ-feel" id="organ-feel">肺泡腔室 · 分岔匯流</p>
+      <div class="title-block"><h1>FREE<span>FLOW.</span></h1><p class="subtitle" id="subtitle">一口自由</p></div>
+      <p class="organ-feel" id="organ-feel">肺泡 · 支氣管</p>
       <div class="route" aria-label="旅程"><span>肺部</span><span>氣管</span><span>咽喉</span><span>鼻腔</span></div>
       <div class="stats">
-        <div><div class="stat-row"><span class="label" id="progress-label">距離自由</span><span class="number"><span id="progress">0</span><small> %</small></span></div><div class="track"><div class="fill" id="progress-fill"></div></div></div>
-        <div><div class="stat-row"><span class="label">剩餘氣量</span><span class="number"><span id="air">100</span><small> %</small></span></div><div class="track"><div class="fill" id="air-fill"></div></div></div>
-        <div class="irritation-row"><span>喉嚨刺激 <b id="irritation">0</b> / 100 · 三次刺碰失敗</span><div class="track"><div class="fill" id="irritation-fill"></div></div></div>
-        <div class="breath-state"><span class="dot"></span><span id="state" role="status">準備好，就吐一口氣。</span></div>
-        <p id="hint">按住往上推，放開往下帶。</p>
+        <div><div class="stat-row"><span class="label" id="progress-label">進度</span><span class="number"><span id="progress">0</span><small> %</small></span></div><div class="track"><div class="fill" id="progress-fill"></div></div></div>
+        <div><div class="stat-row"><span class="label">氣量</span><span class="number"><span id="air">100</span><small> %</small></span></div><div class="track"><div class="fill" id="air-fill"></div></div></div>
+        <div class="irritation-row"><span>刺激 <b id="irritation">0</b> / 100</span><div class="track"><div class="fill" id="irritation-fill"></div></div></div>
+        <div class="breath-state"><span class="dot"></span><span id="state" role="status">待機</span></div>
       </div>
       <div class="controls">
-        <button id="breath" aria-label="按住吐氣，放開吸氣" aria-describedby="state"><strong id="button-label">↑ 按住吐氣</strong><small id="button-note">放開慢吸氣 · 耗盡會強制深吸</small></button>
-        <p class="keyhint">也可以按住 <kbd>SPACE</kbd></p>
-        <div class="bottom-row"><button id="reset">↻ 重新開始</button><button id="practice">吸氣練習</button><button id="duo">雙異物</button><span id="time">00:00</span></div>
+        <button id="breath" aria-label="按住吐氣，放開吸氣" aria-describedby="state"><strong id="button-label">↑ 吐氣</strong><small>↓ 吸氣</small></button>
+        <p class="keyhint"><kbd>SPACE</kbd></p>
+        <div class="bottom-row"><button id="reset">↻ 重來</button><button id="practice">吸氣練習</button><button id="duo">雙異物</button><span id="time">00:00</span></div>
       </div>
     </aside>
   </main>
@@ -163,18 +152,18 @@
   inertia/=6*twiceArea;
   const profiles = [[40,320,390],[380,315,400],[700,305,430],[1100,325,460],[1450,320,470],[1700,320,390],[1850,340,350],[2150,365,430],[2550,280,460],[3000,350,470],[3300,320,250],[3850,320,240],[4250,320,240],[4320,320,240],[4420,340,340],[4510,330,380],[4660,320,270],[4700,320,240],[5150,320,240],[5400,320,180],[5650,320,225],[5900,320,390],[6200,320,525],[6550,320,515],[6800,320,430],[7000,320,310]];
   const obstacles = [
-    { id:'bronchus', y:5680, side:'left', gap:96, name:'卡住的魚刺', kind:'shelf', material:'fishbone' },
+    { id:'bronchus', y:5680, side:'left', gap:96, name:'魚刺', kind:'shelf', material:'fishbone' },
     { id:'trachea', y:4830, side:'right', gap:92, name:'倒鉤魚刺', kind:'shelf', material:'fishbone' },
-    { id:'neck', y:4320, gap:35, name:'喉頭窄口 · 吸氣脫困', kind:'neck' },
-    { id:'vocal', y:3690, name:'喉頭 · 成對聲帶', kind:'gate' },
+    { id:'neck', y:4320, gap:35, name:'喉頭窄口', kind:'neck' },
+    { id:'vocal', y:3690, name:'聲帶', kind:'gate' },
     { id:'membrane', y:3160, name:'咽喉薄膜', kind:'valve', window:[.32,.62], openUntil:0 },
     { id:'throat', y:2880, side:'left', gap:76, name:'會厭軟瓣', kind:'shelf', material:'soft' },
     { id:'fish-throat', y:2520, side:'right', gap:100, name:'咽喉魚刺', kind:'shelf', material:'fishbone' },
     { id:'palate', y:2170, side:'right', gap:74, name:'軟顎彎道', kind:'shelf', material:'soft' },
     { id:'nasopharynx', y:1780, name:'鼻咽軟組織', kind:'valve', window:[.85,1.15], openUntil:0 },
-    { id:'nasal1', y:1360, side:'left', gap:70, name:'下鼻甲 · 厚黏膜', kind:'shelf', material:'turbinate' },
-    { id:'nasal2', y:985, side:'left', gap:66, name:'中鼻甲 · 捲曲鼻道', kind:'shelf', material:'turbinate' },
-    { id:'nasal3', y:610, side:'left', gap:64, name:'上鼻甲 · 嗅覺區', kind:'shelf', material:'turbinate' }
+    { id:'nasal1', y:1360, side:'left', gap:70, name:'下鼻甲', kind:'shelf', material:'turbinate' },
+    { id:'nasal2', y:985, side:'left', gap:66, name:'中鼻甲', kind:'shelf', material:'turbinate' },
+    { id:'nasal3', y:610, side:'left', gap:64, name:'上鼻甲', kind:'shelf', material:'turbinate' }
   ];
   const neck=obstacles.find(o=>o.kind==='neck');
   function bounds(y) {
@@ -279,7 +268,7 @@
   const rightOutline=[...walls[1].filter(p=>p.y<2960),...branchEdge,...walls[1].filter(p=>p.y>3290)];
   const inEsophagus=(x,y)=>y>=esophagus.top&&y<=esophagus.bottom&&pointInPolygon(x,y,esophagus.points);
   const inAirway=(x,y)=>{const [l,r]=wallBounds(y);return x>=l&&x<=r||inEsophagus(x,y);};
-  const regions = [{name:'肺部',en:'LUNGS',bottom:7000,top:5400,color:'#ff7899',feel:'肺泡腔室 · 分岔匯流',speed:220}, {name:'氣管',en:'TRACHEA',bottom:5400,top:3300,color:'#35cedf',feel:'軟骨環 · 喉頭與聲帶',speed:305}, {name:'咽喉',en:'PHARYNX',bottom:3300,top:1700,color:'#f56bc6',feel:'會厭 · 食道岔口 · 軟顎',speed:235}, {name:'鼻腔',en:'NASAL CAVITY',bottom:1700,top:0,color:'#ffc65b',feel:'上／中／下鼻甲 · 捲曲鼻道',speed:265}];
+  const regions = [{name:'肺部',en:'LUNGS',bottom:7000,top:5400,color:'#ff7899',feel:'肺泡 · 支氣管',speed:220}, {name:'氣管',en:'TRACHEA',bottom:5400,top:3300,color:'#35cedf',feel:'軟骨環 · 聲帶',speed:305}, {name:'咽喉',en:'PHARYNX',bottom:3300,top:1700,color:'#f56bc6',feel:'會厭 · 食道 · 軟顎',speed:235}, {name:'鼻腔',en:'NASAL CAVITY',bottom:1700,top:0,color:'#ffc65b',feel:'鼻甲 · 鼻中隔',speed:265}];
   const regionIndex = y => y>5400?0:y>3300?1:y>1700?2:3;
   let failed=false,irritation=0,hurtCooldown=0,hurtFlash=0,injuries=0,failureReason='';
   let body, heldKeys=false, heldPointer=null, running=false, won=false, air=1, flow=0, elapsed=0,practiceMode=false,duoMode=false,bodies=[],pairContacts=0;
@@ -332,15 +321,15 @@
   function begin() { if(!won&&!failed)running=true; }
   function finish() {
     won=true;heldKeys=false;heldPointer=null;
-    $('ending-label').textContent=duoMode?'TWO OUT. ONE BREATH.':practiceMode?'NICE BREATH.':'YOU CAN BREATHE AGAIN.';$('win-title').textContent=duoMode?'一起自由！':practiceMode?'通過了！':'自由了。';$('win').classList.remove('failure');
-    $('result').textContent=duoMode?`${elapsed.toFixed(1)} 秒，兩個異物都排出了。共同呼吸、不同慣性，碰撞也能幫彼此換角。`:practiceMode?`${elapsed.toFixed(1)} 秒通過窄口。吸氣退回寬腔、碰撞換角，再吐氣前進。`:`${Math.floor(elapsed)} 秒，穿越 ${cleared.size} 個阻礙。從肺到鼻腔，終於自由。`;
+    $('win-title').textContent='通關';$('win').classList.remove('failure');
+    $('result').textContent=`${elapsed.toFixed(1)} 秒 · ${duoMode?'2 / 2':practiceMode?'喉頭窄口':`${cleared.size} / ${obstacles.length}`}`;
     $('win').hidden=false;$('again').focus();
   }
   function fail(reason) {
     if(won||failed)return;
     failed=true;running=false;heldKeys=false;heldPointer=null;failureReason=reason;
-    $('ending-label').textContent='TAKE A BREATH. TRY AGAIN.';$('win-title').textContent=reason==='irritation'?'太刺激了。':reason==='esophagus'?'被吞下去了。':'又掉下去了。';
-    $('result').textContent=reason==='irritation'?'碰到三次魚刺，喉嚨承受不住了。換個節奏再試。':reason==='esophagus'?'異物進入食道，被吞嚥收縮帶往下方。留在有流線的氣道，再往鼻腔前進。':'異物掉回肺底了。用短吐氣維持浮力，再找時機穿過。';
+    $('win-title').textContent='失敗';
+    $('result').textContent=reason==='irritation'?'魚刺刺激':reason==='esophagus'?'誤入食道':'落回肺底';
     $('win').classList.add('failure');$('win').hidden=false;$('again').focus();
   }
   function prick() {
@@ -348,7 +337,6 @@
     injuries++;irritation=Math.min(100,injuries*34);hurtCooldown=.9;hurtFlash=.5;
     if(irritation>=100)fail('irritation');
   }
-  function upcoming(b=body) { return obstacles.find(o=>b.y>=o.y-(o.kind==='neck'?145:60)) || null; }
   function gateGap(t=elapsed) { return 14+120*Math.pow((1+Math.sin(t*Math.PI*2/5.7))/2,4); }
   function valveGap(o) {
     if(blowing())return elapsed<o.openUntil?124:14;
@@ -724,59 +712,26 @@
     camera+=(clamp(body.y-viewHeight*.62,0,H-viewHeight)-camera)*Math.min(1,dt*5);
     if(body.y<(practiceMode?neck.y-145:EXIT)&&!failed)finish();
   }
-  function hint() {
-    const focus=duoMode?bodies.filter(b=>!b.escaped).reduce((front,b)=>b.y<front.y?b:front,body):body;
-    if(failed)return failureReason==='irritation'?'三次刺碰，挑戰失敗。重新找一條流線。':failureReason==='esophagus'?'進了食道。下一次沿有流線的氣道前進。':'異物掉回肺底。重新抓住吐氣節奏。';
-    if(won)return duoMode?'兩個都排出了！完整旅程，這一口是自由。':practiceMode?'窄口突破！吸氣可以改變位置，也能幫你脫困。':'從肺部，到鼻腔。這一口是自由。';
-    if(!running)return duoMode?'粉被困在肺泡回流凹袋。先用黃從袋底撞出它，再一起到鼻腔。':practiceMode?'先吐氣接近窄口。卡住後吸氣退回寬腔，碰到斜坡再吐氣。':'從左側肺泡腔出發，沿支氣管向上匯流。';
-    if(breathPhase==='gasp')return '氣量耗盡，必須吸完這一大口。吸氣會把異物往肺部帶。';
-    if(inEsophagus(focus.x,focus.y)&&focus.x>bounds(focus.y)[1]+18)return '滑進食道了！這裡沒有氣流，正被吞嚥收縮帶往下。';
-    if(duoMode&&body.y>pocket.top-120){
-      if(!pocketRescued())return body.y>pocket.floor+120?'粉困在無風的凹袋。吐氣把黃送到袋底，撞出粉！':'黃到袋底了。短吸氣退開換角，再吐氣撞上去！';
-      return '粉脫困了！黃若卡在袋底，短吸退開，再沿旁邊流線上去。';
-    }
-    if(duoMode&&pairImpact&&pairImpact.turning&&pairImpact.life>.25)return '擦撞換角！看異物翻轉，再抓下一口氣。';
-    if(focus.y>2970&&focus.y<3120)return '咽喉岔口：右側食道往下，沿有流線的氣道往上。';
-    const o=upcoming(focus);
-    if(o&&focus.y<o.y+480) {
-      if(o.kind==='neck')return focus.y>o.y+95?'寬腔裡可以換角：吐氣試著通過窄口。':bodyWidth(focus)>o.gap?'橫卡住了！放開吸氣，退到下方寬腔，借軟骨斜坡翻轉。':'轉到窄的一面了，短吐氣穿過！';
-      if(o.kind==='gate')return gateGap()<bodyWidth(focus)+6?'聲門較窄：等張開，或轉到窄的一面。':'聲帶張開了：吐氣穿過窄口！';
-      if(o.kind==='valve') {
-        if(elapsed<o.openUntil&&blowing())return `${o.name}張開了，繼續吐氣穿過！`;
-        if(inhaling()&&inhaleTime>=o.window[0]&&inhaleTime<=o.window[1])return '縫隙變綠了！現在吐氣，趁它還沒閉合。';
-        if(inhaling()&&inhaleTime>o.window[1])return '吸過頭，又閉合了。吐一下，再重新抓時機。';
-        return o.id==='membrane'?'薄膜堵住了：輕吸一下，縫隙變綠就吐氣。':'這裡要吸久一點：等縫隙變綠再吐氣。';
-      }
-      if(o.material==='fishbone')return '魚刺不能碰！短吐氣穿行，短吸氣減速，看清流線再前進。';
-      return `${o.name}：控制吐氣強弱，沿流線穿過缺口。`;
-    }
-    return air<.2&&blowing()?'氣快用完了。先找寬敞處補氣，避免強制深吸。':['擦過腔壁會翻轉，用呼吸節奏改變碰撞。','氣管內氣流較快，轉到窄的一面再穿過聲門。','寬腔裡的軟瓣需要換氣繞過。','鼻中隔分出兩條路，鼻甲讓通路曲折。'][regionIndex(focus.y)];
-  }
   function updateUI() {
     const start=practiceMode?neck.y+100:START,exit=practiceMode?neck.y-145:EXIT;
     const progress=won?100:Math.round(clamp((start-body.y)/(start-exit),0,.99)*100),live=running&&!won&&!failed,active=live&&blowing(),forced=live&&breathPhase==='gasp';
-    $('subtitle').textContent=duoMode?'同一口氣，兩個異物':practiceMode?'吸氣練習':'一口自由';$('progress-label').textContent=duoMode?'已排出異物':practiceMode?'窄口突破':'距離自由';$('reset').textContent=practiceMode||duoMode?'← 完整關卡':'↻ 重新開始';
+    $('subtitle').textContent=duoMode?'雙異物':practiceMode?'吸氣練習':'一口自由';$('progress-label').textContent=duoMode?'已排出':practiceMode?'窄口突破':'進度';$('reset').textContent=practiceMode||duoMode?'← 單異物':'↻ 重來';
     $('progress').textContent=duoMode?`${bodies.filter(b=>b.escaped).length} / 2`:progress;
     $('progress').nextElementSibling.hidden=duoMode;$('progress-fill').style.width=(duoMode?bodies.filter(b=>b.escaped).length*50:progress)+'%';
-    document.querySelector('.intro').innerHTML=duoMode?'粉困在回流凹袋，先用黃撞出它。<br>再一起從肺到鼻腔，兩個都要排出。':'從肺部，一路到鼻腔。<br>每個阻礙，都需要不同的一口氣。';
     canvas.setAttribute('aria-label',duoMode?'雙異物關卡：按住吐氣、放開吸氣，同時引導黃色和粉紅異物到出口。':'按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。');
     $('irritation').textContent=irritation;$('irritation-fill').style.width=irritation+'%';
     $('air').textContent=Math.ceil(air*100);$('air-fill').style.width=air*100+'%';
     $('breath').classList.toggle('active',active);$('breath').classList.toggle('forced',forced);
     $('breath').setAttribute('aria-label',forced?'正在強制深吸氣，這一口無法打斷':'按住吐氣，放開吸氣');
-    $('button-label').textContent=won||failed?'↑ 再玩一次':forced?'↓ 強制深吸氣':active?'↑ 吐氣中':'↑ 按住吐氣';
-    $('button-note').textContent=forced?'這一口無法打斷 · 吸滿後恢復控制':'放開慢吸氣 · 耗盡會強制深吸';
-    const status=failed?'挑戰失敗 · 再試一次':won?(duoMode?'兩個異物都自由了！':practiceMode?'窄口突破！':'異物排出了！'):!running?(duoMode?'準備好，一口氣影響兩個異物。':practiceMode?'準備好，試著通過窄口。':'準備好，從肺部出發。'):forced?'氣量耗盡 · 正在深吸氣':active?(air<.1?'氣快用完了…':'吐氣 · 推動流場'):breathPhase==='rest-exhale'?'自然吐氣 · 輕柔呼吸':breathTime<INHALE_SECONDS*.25?'吸氣 · 慢慢吸入':breathTime>INHALE_SECONDS*.75?'吸氣 · 逐漸放緩':'吸氣 · 補氣中';
+    $('button-label').textContent=won||failed?'↻ 重試':forced?'↓ 強制深吸氣':'↑ 吐氣';
+    const status=failed?'失敗':won?'通關':!running?'待機':forced?'強制深吸氣':active?'吐氣':breathPhase==='rest-exhale'?'自然吐氣':'吸氣';
     if($('state').textContent!==status)$('state').textContent=status;
     document.querySelector('.breath-state').style.color=active?'var(--pink)':'var(--aqua)';
-    $('hint').textContent=hint();$('stage-hint').textContent=hint();
     const region=regionIndex(body.y),food=inEsophagus(body.x,body.y)&&body.x>bounds(body.y)[1]+18;
-    $('area').textContent=duoMode?`雙異物 / 0${region+1} · ${regions[region].name}`:practiceMode?'練習 / 喉頭窄口 · 吸氣脫困':food?'支路 / 食道 · ESOPHAGUS':`0${region+1} / ${regions[region].name} · ${regions[region].en}`;
-    $('organ-feel').textContent=duoMode?regions[region].feel:practiceMode?'窄口 · 寬腔 · 軟骨斜坡':food?'縱向皺褶 · 吞嚥收縮 · 通往胃':regions[region].feel;
+    $('area').textContent=duoMode?`雙異物 / 0${region+1} · ${regions[region].name}`:practiceMode?'練習 / 喉頭窄口':food?'支路 / 食道 · ESOPHAGUS':`0${region+1} / ${regions[region].name} · ${regions[region].en}`;
+    $('organ-feel').textContent=duoMode?regions[region].feel:practiceMode?'窄口 · 寬腔 · 軟骨斜坡':food?'食道':regions[region].feel;
     const routeIndex=region;
     document.querySelectorAll('.route span').forEach((el,i)=>{el.textContent=['肺部','氣管','咽喉','鼻腔'][i];el.classList.toggle('current',!food&&i===routeIndex);el.classList.toggle('passed',i<routeIndex);});
-    document.querySelector('.title-block .eyebrow').textContent=duoMode?'TWO BODIES. ONE BREATH.':'A LONG WAY TO FREEDOM.';
-    document.querySelector('footer span:last-child').textContent=duoMode?'肺部 → 氣管 → 咽喉 → 鼻腔 · 兩個都要排出':'肺部 → 氣管 → 咽喉 → 鼻腔';
     document.querySelector('.stage').setAttribute('aria-label',duoMode?'雙異物完整器官長關卡':'從肺部到鼻腔的長途關卡');
     $('time').textContent=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(Math.floor(elapsed%60)).padStart(2,'0')}`;
   }
@@ -850,8 +805,7 @@
     }
     ctx.restore();
     ctx.font='900 15px system-ui';ctx.textAlign='center';inkText('食道入口 ↘',568,3095,art.yellow);
-    ctx.save();ctx.translate(585,3600);ctx.rotate(Math.PI/2);ctx.font='900 14px system-ui';inkText('食 道  →  通 往 胃',0,0);ctx.restore();
-    ctx.font='900 12px system-ui';inkText('↓ 吞嚥收縮',585,3860,art.yellow);
+    ctx.save();ctx.translate(585,3600);ctx.rotate(Math.PI/2);ctx.font='900 14px system-ui';inkText('食 道',0,0);ctx.restore();
   }
   function drawVocal(o) {
     for(const [i,shape] of vocalShapes(o).entries()) {
@@ -877,7 +831,7 @@
         for(let y=Math.max(6110,Math.ceil(camera/80)*80);y<Math.min(structure.bottom-30,camera+viewHeight);y+=80){
           const x=center(y);ctx.beginPath();ctx.moveTo(x,y+35);ctx.bezierCurveTo(x-6,y+15,x-25,y+9,x-39,y-9);ctx.moveTo(x,y+35);ctx.bezierCurveTo(x+6,y+15,x+25,y+9,x+39,y-9);ctx.strokeStyle='#b72b95';ctx.lineWidth=5;ctx.stroke();
         }
-        if(6040>camera&&6040<camera+viewHeight)stickerTag('支氣管分岔 · 兩側匯流',center(6040),6040,'#ffcde4');
+        if(6040>camera&&6040<camera+viewHeight)stickerTag('支氣管',center(6040),6040,'#ffcde4');
       }
     }
   }
@@ -971,8 +925,7 @@
       ctx.fillStyle='#194574';ctx.fillRect(pocket.x-pocket.width/2+7,pocket.top,pocket.width-14,pocket.floor-pocket.top);
       stickerShape(pocketAttachment,regions[0].color,5);drawTissueSurface(pocketAttachment,'lung');
       for(const shape of pocketLining){stickerShape(shape,'#ff9ecb',3);drawTissueSurface(shape,'mucosa');}
-      stickerTag(pocketRescued()?'粉脫困了！':'肺泡回流凹袋 · 粉等救援',pocket.x,pocket.top-65,pocketRescued()?art.yellow:art.paper);
-      ctx.font='900 13px system-ui';ctx.textAlign='center';inkText('↑ 用黃撞袋底',pocket.x,pocket.floor+62,art.yellow);
+      stickerTag(pocketRescued()?'已脫困':'回流凹袋',pocket.x,pocket.top-65,pocketRescued()?art.yellow:art.paper);
     }
     for(const impact of impacts) {
       const age=1-impact.life/.32;
@@ -1001,25 +954,20 @@
       const [a,b]=openings(o);
       stickerTag(o.name,o.material==='turbinate'?(a+b)/2:center(o.y),o.y-110,o.material==='fishbone'?'#ffd4e3':art.paper);
       ctx.font='900 13px system-ui';ctx.textAlign='center';
-      if(o.kind==='shelf')inkText(o.material==='fishbone'?'⚠ 魚刺不可碰':'沿氣流繞行',(a+b)/2,o.y+78,o.material==='fishbone'?'#ff9dc1':art.cyan);
-      else if(o.kind==='neck') {
-        inkText('↑ 窄面通過',center(o.y)-12,o.y-65,art.yellow);
-        inkText('↓ 吸氣退回寬腔',center(o.y)-35,o.y+124,art.cyan);
-        inkText('軟骨斜坡 · 碰撞換角',center(o.y)+30,o.y+218,art.paper);
-      }
-      else if(o.kind==='gate')inkText(gateGap()>bodyWidth()+6?'聲門張開 · 穿過':'聲門較窄 · 等待／轉向',center(o.y),o.y+115,art.yellow);
-      else {
+      if(o.kind==='neck')inkText('軟骨斜坡',center(o.y)+30,o.y+218,art.paper);
+      else if(o.kind==='gate')inkText(gateGap()>bodyWidth()+6?'聲門張開':'聲門收窄',center(o.y),o.y+115,art.yellow);
+      else if(o.kind==='valve') {
         const open=valveGap(o)>70;
-        inkText(open?'張開！吐氣穿過':o.id==='membrane'?'輕吸 → 張開 → 吐氣':'慢吸 → 張開 → 吐氣',center(o.y),o.y+70,open?art.yellow:art.paper);
+        inkText(open?'張開':'閉合',center(o.y),o.y+70,open?art.yellow:art.paper);
         const bx=center(o.y)-70,by=o.y+93;
         ctx.fillStyle=art.ink;ctx.fillRect(bx,by,140,7);ctx.strokeStyle=art.paper;ctx.lineWidth=2;ctx.strokeRect(bx,by,140,7);
         ctx.fillStyle='#baf264';ctx.fillRect(bx+o.window[0]/1.5*140,by,(o.window[1]-o.window[0])/1.5*140,7);
         if(inhaling()){ctx.fillStyle=open?art.yellow:art.cyan;ctx.fillRect(bx+clamp(inhaleTime/1.5,0,1)*140-2,by-4,4,15);}
       }
     }
-    for(const reg of regions)if(reg.top>0&&reg.top>camera+70&&reg.top<camera+viewHeight-30)stickerTag(`↑ 進入${regions[regions.indexOf(reg)+1].name}`,center(reg.top),reg.top,art.cyan);
+    for(const reg of regions)if(reg.top>0&&reg.top>camera+70&&reg.top<camera+viewHeight-30)stickerTag(regions[regions.indexOf(reg)+1].name,center(reg.top),reg.top,art.cyan);
     if(camera<160) {
-      stickerTag('↑ 鼻腔出口 / FREE AT LAST',center(40),40,art.yellow);
+      stickerTag('鼻腔出口',center(40),40,art.yellow);
       const [l,r]=bounds(EXIT);ctx.beginPath();ctx.moveTo(l+10,EXIT);ctx.lineTo(r-10,EXIT);ctx.setLineDash([7,9]);ctx.strokeStyle=art.yellow;ctx.lineWidth=5;ctx.stroke();ctx.setLineDash([]);
     }
     if(duoMode){
@@ -1029,7 +977,7 @@
         for(const t of pairImpact.turns){ctx.save();ctx.translate(t.x,t.y);ctx.rotate(t.angle);ctx.scale(t.size,t.size);ctx.beginPath();polygonPath(outline);ctx.strokeStyle=t.color;ctx.lineWidth=5;ctx.stroke();ctx.restore();}
         ctx.globalAlpha=1-age;
         for(let i=0;i<8;i++){const a=i*Math.PI/4,r=8+age*30;ctx.beginPath();ctx.moveTo(pairImpact.x+Math.cos(a)*r,pairImpact.y+Math.sin(a)*r);ctx.lineTo(pairImpact.x+Math.cos(a)*(r+10),pairImpact.y+Math.sin(a)*(r+10));ctx.strokeStyle=i%2?art.cyan:art.yellow;ctx.lineWidth=4;ctx.stroke();}
-        stickerTag(pairImpact.turning?'擦撞換角！':'碰！',pairImpact.x,pairImpact.y-45-age*20,art.paper);ctx.restore();
+        stickerTag(pairImpact.turning?'翻轉':'碰撞',pairImpact.x,pairImpact.y-45-age*20,art.paper);ctx.restore();
       }
       for(const b of bodies)if(!b.escaped) {
         drawCharacter(b);
