@@ -303,12 +303,28 @@ const { chromium } = require('playwright');
     await page.locator('#reset').click();
     assert.equal((await state()).body.y, 6600);
 
+    const ceiling=await page.evaluate(()=>{
+      return [-.8,-.25,0,.5].map(angle=>{
+        flowTest.seedDuo([{x:180,y:226,vy:-220,angle},{x:440,y:810}]);flowTest.input(true);
+        let impact=null,retreat=0,clear=true;
+        for(let i=0;i<90;i++) {
+          flowTest.advance(1/120);const s=flowTest.state,b=s.bodies[0];
+          if(b.reboundTime>0&&!impact)impact={y:b.y,vy:b.vy,phase:s.breathPhase};
+          if(impact)retreat=Math.max(retreat,b.y-impact.y);
+          const points=flowTest.bodyPoints(b);
+          for(let j=0;j<points.length;j++){const a=points[j],b=points[(j+1)%points.length];for(const t of [0,.25,.5,.75])if(flowTest.inSolid(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t))clear=false;}
+        }
+        return {angle,impact,retreat,clear,held:flowTest.state.held};
+      });
+    });
+    assert(ceiling.every(s=>s.impact&&s.impact.vy>25&&s.impact.phase==='exhale'&&s.retreat>20&&s.clear&&s.held),'Ordinary horizontal concha undersides must return every tested orientation to the cavity while exhale remains held, without penetration');
+
     const duoChecks=await page.evaluate(()=>{
       const input=value=>window.dispatchEvent(new KeyboardEvent(value?'keydown':'keyup',{code:'Space'}));
       flowTest.startDuo();input(true);flowTest.advance(6.1);
       const jam=flowTest.state;flowTest.advance(54);const heldLong=flowTest.state;
       flowTest.startDuo();let clearance=true,maxOverlap=0,firstEscape=null;
-      const route=[[true,2],[false,1.2],[true,4],[false,2.4],[true,4],[false,2.4],[true,4],[false,.8],[true,2]];
+      const route=[[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,.8],[true,2]];
       for(const [held,seconds] of route){input(held);for(let i=0;i<Math.round(seconds*120)&&!flowTest.state.won;i++){
         flowTest.advance(1/120);const s=flowTest.state;
         for(const b of s.bodies)if(!b.escaped){const pts=flowTest.bodyPoints(b);for(let j=0;j<pts.length;j++){const a=pts[j],b=pts[(j+1)%pts.length];for(const t of [0,.25,.5,.75])if(flowTest.inSolid(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t))clearance=false;}}
@@ -335,7 +351,7 @@ const { chromium } = require('playwright');
     await page.locator('#again').click();
     assert((await state()).duoMode&&(await state()).bodies.length===2&&!(await state()).running,'Retry must reset the same two-body level');
     const escapeRetained=await page.evaluate(()=>{
-      flowTest.startDuo();const route=[[true,2],[false,1.2],[true,4],[false,2.4],[true,4],[false,2.4],[true,4],[false,.8],[true,2]];
+      flowTest.startDuo();const route=[[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,.8],[true,2]];
       outer:for(const [held,seconds] of route){flowTest.input(held);for(let i=0;i<seconds*120;i++){flowTest.advance(1/120);if(flowTest.state.bodies.some(b=>b.escaped))break outer;}}
       const before=flowTest.state,index=before.bodies.findIndex(b=>b.escaped);
       flowTest.input(false);flowTest.advance(2);return {before,after:flowTest.state,index};
@@ -400,7 +416,7 @@ const { chromium } = require('playwright');
       await page.screenshot({ path: process.env.FLOW_SCREENSHOT, fullPage: true });
       await touch.screenshot({ path: process.env.FLOW_SCREENSHOT.replace(/\.png$/, '-mobile.png'), fullPage: true });
     }
-    console.log(`PASS: two-body keyboard-only victory, 60-second constant-hold blocked by exit valve, whole-outline clearance, shared-field/contact jam, mass/momentum/energy/torque, independent escape retention, pair floor/fish hazard/retry, fixed camera and mobile controls; constant-exhale neck wedging, inhale retreat/ramp torque/real slot clearance, practice victory/retry/full-level return, free-flight orientation/no inhale unlock, nonlinear refill/airflow, uninterruptible empty-air gasp/full recovery, gentle automatic breathing, forced keyboard/touch HUD and reset, irregular outline/angle-dependent clearance, contact torque/friction/energy bounds, elastic curved walls/low-speed settling, fast fishbone contact, paired vocal folds, bilateral concha passages, esophageal failure/retry, release inertia, flow/reversal/recirculation, pulmonary and three-prick failure/cooldown, four-organ victory (${victory.elapsed.toFixed(1)}s, ${victory.injuries} pricks / ${routes.count} obstacles) with full-outline clearance, particle trails/solids, keyboard/pointer/blur, mobile touch/cancel; no runtime errors.`);
+    console.log(`PASS: general horizontal-wall rebound/held-exhale retreat/angle coverage/whole-outline clearance; two-body keyboard-only victory, 60-second constant-hold blocked by exit valve, whole-outline clearance, shared-field/contact jam, mass/momentum/energy/torque, independent escape retention, pair floor/fish hazard/retry, fixed camera and mobile controls; constant-exhale neck wedging, inhale retreat/ramp torque/real slot clearance, practice victory/retry/full-level return, free-flight orientation/no inhale unlock, nonlinear refill/airflow, uninterruptible empty-air gasp/full recovery, gentle automatic breathing, forced keyboard/touch HUD and reset, irregular outline/angle-dependent clearance, contact torque/friction/energy bounds, elastic curved walls/low-speed settling, fast fishbone contact, paired vocal folds, bilateral concha passages, esophageal failure/retry, release inertia, flow/reversal/recirculation, pulmonary and three-prick failure/cooldown, four-organ victory (${victory.elapsed.toFixed(1)}s, ${victory.injuries} pricks / ${routes.count} obstacles) with full-outline clearance, particle trails/solids, keyboard/pointer/blur, mobile touch/cancel; no runtime errors.`);
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));
