@@ -360,19 +360,26 @@
     return [left,left.map(p=>({x:2*c-p.x,y:p.y}))];
   }
   function polygonPath(points) {ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.closePath();}
-  // A fixed-camera puzzle: both bodies share the breath field and physical contacts.
   const duoShapes=[
     {name:'支氣管分流',color:'#ff94b8',points:[[320,625],[344,720],[344,900],[296,900],[296,720]]},
     {name:'喉頭窄口',color:'#b888ff',points:[[100,250],[267.5,250],[267.5,412],[230,450],[100,486]]},
     {name:'喉頭窄口',color:'#b888ff',points:[[302.5,250],[540,250],[540,486],[335,450],[302.5,412]]},
     {name:'換角斜坡',color:'#92fff0',points:[[540,455],[323,468],[271,500],[290,525],[540,554]]},
-    {name:'下鼻甲',color:'#ff90cc',points:[[100,200],[305,200],[330,220],[316,239],[100,240]]},
-    {name:'上鼻甲',color:'#ff90cc',points:[[300,110],[540,110],[540,145],[315,145],[292,128]]},
+    {name:'下鼻甲',color:'#ff90cc',points:[[100,150],[305,150],[330,170],[316,189],[100,190]]},
+    {name:'上鼻甲',color:'#ff90cc',points:[[300,50],[540,50],[540,85],[315,85],[292,68]]},
     {name:'魚刺',color:'#fff9ff',fish:true,points:[[540,596],[492,615],[540,622]]}
   ].map(o=>({...o,points:o.points.map(([x,y])=>({x,y}))}));
+  const duoValve={y:42,window:[.45,1.4],openUntil:0};
+  function duoSolids() {
+    const gap=elapsed<duoValve.openUntil?180:12,c=200;
+    return duoShapes.concat([
+      {name:'鼻咽軟瓣',color:'#a3ef89',points:[{x:100,y:33},{x:c-gap/2,y:33},{x:c-gap/2,y:51},{x:100,y:51}]},
+      {name:'鼻咽軟瓣',color:'#a3ef89',points:[{x:c+gap/2,y:33},{x:540,y:33},{x:540,y:51},{x:c+gap/2,y:51}]}
+    ]);
+  }
   function bodyInertia(b){return inertia*(b.size||1)**2;}
   function startDuo() {
-    reset();duoMode=true;
+    reset();duoMode=true;duoValve.openUntil=0;
     bodies=[
       {x:200,y:790,vx:0,vy:0,angle:-.25,omega:0,size:1,mass:1,color:art.yellow,name:'黃',escaped:false},
       {x:440,y:810,vx:0,vy:0,angle:.25,omega:0,size:.62,mass:.25,color:art.pink,name:'粉',escaped:false}
@@ -382,7 +389,7 @@
   function duoChannel(x,y) {
     const t=clamp((y-550)/180,0,1),mix=t*t*(3-2*t);
     const lane=x>320?440:200;
-    const upper=285+100*Math.exp(-(((y-235)/60)**2))-55*Math.exp(-(((y-135)/50)**2));
+    const upper=285-75*Math.exp(-(((y-540)/70)**2))+100*Math.exp(-(((y-175)/42)**2))-55*Math.exp(-(((y-70)/40)**2));
     return {c:upper*(1-mix)+lane*mix,width:220*(1-mix)+160*mix};
   }
   function duoStream(x,y) {const {c,width}=duoChannel(x,y);return 260*220*(x-c)/width;}
@@ -401,7 +408,7 @@
       if(overlap<=0)return null;
       if(overlap<depth){depth=overlap;const sign=(b.x-a.x)*ax+(b.y-a.y)*ay>=0?1:-1;nx=ax*sign;ny=ay*sign;}
     }
-    // Clip the actual polygons; the overlap centroid supplies a shared contact.
+    // Clip the actual polygons; their overlap supplies a shared contact point.
     let clipped=pa;
     for(let i=0;i<pb.length&&clipped.length;i++) {
       const p=pb[i],q=pb[(i+1)%pb.length],side=v=>(q.x-p.x)*(v.y-p.y)-(q.y-p.y)*(v.x-p.x),out=[];
@@ -438,8 +445,9 @@
     const left=support(1,0),right=support(-1,0);
     if(body.x-left.distance<100)hit=resolve(1,0,100-body.x+left.distance,left,.58,.12,true)||hit;
     if(body.x+right.distance>540)hit=resolve(-1,0,body.x+right.distance-540,right,.58,.12,true)||hit;
-    for(const o of duoShapes)if(collidePolygon(o.points,o.fish?.42:.28,o.fish?.25:.35)) {hit=true;if(o.fish)prick();}
-    if(body.y+support(0,-1).distance>900&&elapsed>3)fail('fell');
+    for(const o of duoSolids())if(collidePolygon(o.points,o.fish?.42:.28,o.fish?.25:.35)) {hit=true;if(o.fish)prick();}
+    const bottom=support(0,-1);
+    if(body.y+bottom.distance>900){resolve(0,-1,body.y+bottom.distance-900,bottom,.3,.2,true);hit=true;if(elapsed>3)fail('fell');}
     if(hit){if(contact<=0){collisions++;bumpFlash=.22;}contact=.12;}
   }
   function stepDuo(dt) {
@@ -449,18 +457,20 @@
       b.omega*=Math.exp(-.65*dt);b.angle+=b.omega*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;
     }
     let touched=false;
-    for(let pass=0;pass<8;pass++) {
+    for(let pass=0;pass<16;pass++) {
       for(const b of bodies)if(!b.escaped){body=b;collideDuoBody();}
       touched=collidePair(bodies[0],bodies[1])||touched;
     }
+    for(const b of bodies)if(!b.escaped){body=b;collideDuoBody();}
     if(touched)pairContacts++;
-    for(const b of bodies)if(!b.escaped&&Math.max(...bodyPoints(b).map(p=>p.y))<70)b.escaped=true;
+    for(const b of bodies)if(!b.escaped&&Math.max(...bodyPoints(b).map(p=>p.y))<25)b.escaped=true;
     body=bodies.find(b=>!b.escaped)||bodies[0];
     if(bodies.every(b=>b.escaped)&&!failed)finish();
   }
   function duoHint() {
     if(failed)return '任一異物落底，或三次刺碰，就要一起重試。';
     if(won)return '兩個都排出了！可以試試另一種呼吸節奏。';
+    if(bodies.some(b=>!b.escaped&&b.y<125))return elapsed<duoValve.openUntil?'軟瓣張開了！趁這口氣把兩個排出。':inhaling()&&inhaleTime>=.45&&inhaleTime<=1.4?'軟瓣準備好了！現在吐氣，開口只保留一小段時間。':'出口軟瓣：短吸氣約半秒到一秒，再吐氣開啟；自動深吸太久。';
     if(bodies.some(b=>b.escaped))return '一個已安全排出！繼續用呼吸引導留下的異物。';
     if(breathPhase==='gasp')return '強制深吸會同時拉回兩個異物，注意下方肺底。';
     const big=bodies[0];
@@ -480,12 +490,16 @@
     const tissue=ctx.createLinearGradient(0,0,0,900);tissue.addColorStop(0,'#ffc35b');tissue.addColorStop(.45,'#bd77ef');tissue.addColorStop(1,'#ff6faf');
     ctx.fillStyle=tissue;ctx.fillRect(0,0,100,960);ctx.fillRect(540,0,100,960);ctx.fillRect(100,900,440,60);
     for(const x of [100,540]){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,900);ctx.strokeStyle=art.ink;ctx.lineWidth=16;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=5;ctx.stroke();}
-    for(const o of duoShapes)stickerShape(o.points,o.color,5);
+    for(const side of [45,595])for(let y=665;y<885;y+=56){ctx.beginPath();ctx.arc(side,y,22,0,Math.PI*2);ctx.fillStyle='#ffb6d8';ctx.fill();ctx.strokeStyle='#bd3e91';ctx.lineWidth=4;ctx.stroke();ctx.beginPath();ctx.arc(side-6,y-6,6,0,Math.PI*2);ctx.fillStyle=art.paper;ctx.fill();}
+    for(const o of duoSolids())stickerShape(o.points,o.color,5);
+    for(let y=300;y<405;y+=28)for(const [a,b] of [[118,247],[322,521]]){ctx.beginPath();ctx.moveTo(a,y);ctx.quadraticCurveTo((a+b)/2,y+10,b,y);ctx.strokeStyle='#dcc3ff';ctx.lineWidth=6;ctx.stroke();}
+    for(const [x,y,word] of [[53,176,'鼻腔'],[53,378,'喉頭'],[53,618,'肺部']]){ctx.font='900 16px system-ui';ctx.textAlign='center';inkText(word,x,y,art.paper);}
     moveParticles(dt);
     for(const p of particles)if(p.trail.length>1){ctx.beginPath();ctx.moveTo(p.trail[0].x,p.trail[0].y);for(const v of p.trail)ctx.lineTo(v.x,v.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle=flow>.1?'#ffe44b99':'#42edee99';ctx.lineWidth=2.5;ctx.stroke();}
-    stickerTag('↑ 兩個都要排出',320,52,art.yellow);
-    ctx.beginPath();ctx.moveTo(112,70);ctx.lineTo(528,70);ctx.setLineDash([7,9]);ctx.strokeStyle=art.yellow;ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);
-    stickerTag('鼻甲彎道',425,178,art.paper);
+    stickerTag('↑ 兩個都要排出',320,20,art.yellow);
+    ctx.font='900 12px system-ui';ctx.textAlign='center';inkText(elapsed<duoValve.openUntil?'軟瓣已開 · 吐氣！':'短吸 → 吐氣 · 開軟瓣',215,99,elapsed<duoValve.openUntil?art.yellow:art.cyan);
+    ctx.beginPath();ctx.moveTo(112,25);ctx.lineTo(528,25);ctx.setLineDash([7,9]);ctx.strokeStyle=art.yellow;ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);
+    stickerTag('鼻甲彎道',425,132,art.paper);
     stickerTag('35 · 窄面通過',285,286,art.paper);
     stickerTag('↓ 吸氣 · 退回換角',286,575,art.cyan);
     stickerTag('匯流：會互相碰撞',320,615,art.paper);
@@ -664,7 +678,7 @@
     }return inside;
   }
   function inSolid(x,y) {
-    if(duoMode)return x<100||x>540||y>900||duoShapes.some(o=>pointInPolygon(x,y,o.points));
+    if(duoMode)return x<100||x>540||y>900||duoSolids().some(o=>pointInPolygon(x,y,o.points));
     if(!inAirway(x,y)||y>6900)return true;
     for(const s of structures)if(y>=s.top&&y<=s.bottom&&pointInPolygon(x,y,s.points))return true;
     for(const o of obstacles)if(Math.abs(y-o.y)<(o.kind==='neck'?250:110)) {
@@ -698,6 +712,8 @@
     if(exhaling&&!wasBlowing)for(const valve of obstacles)if(valve.kind==='valve'&&Math.abs(body.y-valve.y)<300) {
       valve.openUntil=inhaleTime>=valve.window[0]&&inhaleTime<=valve.window[1]?elapsed+2.3:0;
     }
+    if(duoMode&&exhaling&&!wasBlowing&&bodies.some(b=>!b.escaped&&b.y<245))
+      duoValve.openUntil=inhaleTime>=duoValve.window[0]&&inhaleTime<=duoValve.window[1]?elapsed+2.3:0;
     inhaleTime=inhaling()?inhaleTime+dt:0;wasBlowing=exhaling;
     flow+=(target-flow)*Math.min(1,dt*5);
     if(duoMode){stepDuo(dt);return;}
@@ -743,7 +759,7 @@
     $('progress').textContent=duoMode?`${bodies.filter(b=>b.escaped).length} / 2`:progress;
     $('progress').nextElementSibling.hidden=duoMode;$('progress-fill').style.width=(duoMode?bodies.filter(b=>b.escaped).length*50:progress)+'%';
     document.querySelector('.intro').innerHTML=duoMode?'黃大、粉小，共用一口呼吸。<br>先分流，再匯流；兩個都要排出。':'從肺部，一路到鼻腔。<br>每個阻礙，都需要不同的一口氣。';
-    canvas.setAttribute('aria-label',duoMode?'雙異物關卡：按住吐氣、放開吸氣，同時引導黄色和粉紅異物到出口。':'按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。');
+    canvas.setAttribute('aria-label',duoMode?'雙異物關卡：按住吐氣、放開吸氣，同時引導黃色和粉紅異物到出口。':'按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。');
     $('irritation').textContent=irritation;$('irritation-fill').style.width=irritation+'%';
     $('air').textContent=Math.ceil(air*100);$('air-fill').style.width=air*100+'%';
     $('breath').classList.toggle('active',active);$('breath').classList.toggle('forced',forced);
@@ -757,7 +773,11 @@
     const region=regionIndex(body.y),food=inEsophagus(body.x,body.y)&&body.x>bounds(body.y)[1]+18;
     $('area').textContent=duoMode?'雙異物 / 分流 → 窄口 → 鼻腔':practiceMode?'練習 / 喉頭窄口 · 吸氣脫困':food?'支路 / 食道 · ESOPHAGUS':`0${region+1} / ${regions[region].name} · ${regions[region].en}`;
     $('organ-feel').textContent=duoMode?'黃：大且重 · 粉：小且輕 · 都會碰撞':practiceMode?'窄口 · 寬腔 · 軟骨斜坡':food?'縱向皺褶 · 吞嚥收縮 · 通往胃':regions[region].feel;
-    document.querySelectorAll('.route span').forEach((el,i)=>{el.classList.toggle('current',!food&&i===region);el.classList.toggle('passed',i<region);});
+    const routeIndex=duoMode?(body.y>625?0:body.y>455?1:body.y>245?2:3):region;
+    document.querySelectorAll('.route span').forEach((el,i)=>{el.textContent=(duoMode?['分流','匯流','窄口','鼻甲']:['肺部','氣管','咽喉','鼻腔'])[i];el.classList.toggle('current',!food&&i===routeIndex);el.classList.toggle('passed',i<routeIndex);});
+    document.querySelector('.title-block .eyebrow').textContent=duoMode?'TWO BODIES. ONE BREATH.':'A LONG WAY TO FREEDOM.';
+    document.querySelector('footer span:last-child').textContent=duoMode?'分流 → 匯流 → 窄口 → 鼻甲 · 兩個都要排出':'肺部 → 氣管 → 咽喉 → 鼻腔';
+    document.querySelector('.stage').setAttribute('aria-label',duoMode?'雙異物固定鏡頭關卡':'從肺部到鼻腔的長途關卡');
     $('time').textContent=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(Math.floor(elapsed%60)).padStart(2,'0')}`;
   }
   function resize() {
@@ -1015,7 +1035,7 @@
   if(new URLSearchParams(location.search).has('test'))window.flowTest={
     get state(){return {body:{...body},air,flow,running,won,failed,irritation,injuries,hurtCooldown,failureReason,elapsed,collisions,held:held(),camera,cleared:[...cleared],region:regionIndex(body.y),inhaleTime,nasalLane,viewHeight,breathPhase,breathTime,gasps,practiceMode,duoMode,bodies:bodies.map(b=>({...b})),pairContacts};},
     reset,advance(seconds){for(let i=0;i<Math.round(seconds/STEP);i++)step(STEP);updateUI();},bounds,center,radius:BR,start:START,height:H,view:VIEW,obstacles,
-    startDuo,pairManifold,collidePair,duoShapes,duoVelocity,bodyInertia,
+    startDuo,pairManifold,collidePair,duoShapes,duoSolids,duoVelocity,duoValve,bodyInertia,
     seedDuo(states){startDuo();states.forEach((b,i)=>Object.assign(bodies[i],b));running=true;},
     bodyPoints,outline,inertia,support,collide,collidePolygon,wallBounds,openings,gateGap,blocks,side:obstacleSide,structures,shelfShape,fishbonePieces,vocalShapes,neckShapes,esophagus,inEsophagus,inAirway,regions,velocityAt,inSolid,prick,
     seedBody(state,initialAir=1){reset();Object.assign(body,state);air=clamp(initialAir,0,1);breathStartAir=air;if(air<1)breathPhase='inhale';running=true;camera=clamp(body.y-viewHeight*.62,0,H-viewHeight);updateUI();},
