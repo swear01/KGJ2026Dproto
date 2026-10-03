@@ -32,12 +32,12 @@ const { chromium } = require('playwright');
     await page.locator('#practice').click();
     await page.keyboard.down('Space');await advance(2);const wedged=await state();
     assert((await page.locator('#hint').textContent()).includes('吸氣'),'A stuck body must show the inhale-to-retreat hint');
-    await page.keyboard.up('Space');await advance(2.7);const retreat=await state();
+    await page.keyboard.up('Space');await advance(2.1);const retreat=await state();
     assert(retreat.body.y>wedged.body.y+45&&retreat.collisions>wedged.collisions&&Math.abs(retreat.body.angle-wedged.body.angle)>.3,'Inhale must retreat into the chamber and rotate through ramp contact');
     await page.keyboard.down('Space');
     const neckPass=await page.evaluate(()=>{
       const neck=flowTest.obstacles.find(o=>o.kind==='neck');let clear=true,slotWidth=Infinity;
-      for(let i=0;i<168&&!flowTest.state.won;i++) {
+      for(let i=0;i<300&&!flowTest.state.won;i++) {
         flowTest.advance(1/120);const points=flowTest.bodyPoints(),y=flowTest.state.body.y;
         for(let j=0;j<points.length;j++){const a=points[j],b=points[(j+1)%points.length];for(const t of [0,.25,.5,.75])if(flowTest.inSolid(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t))clear=false;}
         if(y<neck.y+20&&y>neck.y-85)slotWidth=Math.min(slotWidth,Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x)));
@@ -240,7 +240,7 @@ const { chromium } = require('playwright');
               if(s.elapsed<o.openUntil)blow=true;
               else if(!s.held&&s.inhaleTime>=(o.window[0]+o.window[1])/2)blow=true;
               else blow=s.held?s.body.y>o.y+100:false;
-            } else if(o.material==='fishbone'&&safe)blow=(i%10)<4;
+            } else if(o.material==='fishbone'&&safe)blow=(i%10)<8;
           }
           flowTest.input(blow);flowTest.advance(.05);
           const after=flowTest.state,[l,r]=flowTest.bounds(after.body.y);
@@ -313,71 +313,98 @@ const { chromium } = require('playwright');
     });
     assert(cornerRebound.after.reboundTime>0&&cornerRebound.after.vy<10&&Math.abs(cornerRebound.after.omega)>1&&cornerRebound.energyAfter<=cornerRebound.energyBefore+1e-6,`A strong off-center roof impact must arm the rebound interval even when energy becomes rotation instead of center-of-mass retreat: ${JSON.stringify(cornerRebound)}`);
 
-    const ceiling=await page.evaluate(()=>{
-      return [-.8,-.25,0,.5,Math.PI/2].map(angle=>{
-        flowTest.seedDuo([{x:180,y:226,vy:-220,angle},{x:440,y:810}]);flowTest.input(true);
-        let impact=null,retreat=0,peakVy=0,clear=true,heldThroughout=true;
-        for(let i=0;i<90;i++) {
-          flowTest.advance(1/120);const s=flowTest.state,b=s.bodies[0];
-          heldThroughout=heldThroughout&&s.held&&s.breathPhase==='exhale';
-          if(b.reboundTime>0&&!impact)impact={y:b.y,vy:b.vy,phase:s.breathPhase};
-          if(impact){retreat=Math.max(retreat,b.y-impact.y);peakVy=Math.max(peakVy,b.vy);}
-          const points=flowTest.bodyPoints(b);
-          for(let j=0;j<points.length;j++){const a=points[j],b=points[(j+1)%points.length];for(const t of [0,.25,.5,.75])if(flowTest.inSolid(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t))clear=false;}
-        }
-        return {angle,impact,retreat,peakVy,clear,held:heldThroughout};
-      });
+    const valveCorner=await page.evaluate(()=>{
+      flowTest.seedDuo([{x:333.1339263107636,y:3172.7271530083053,angle:30.582442249391917,size:.62,mass:.25},{x:320,y:5000}]);
+      const rect={x:148.72997517430548,y:3140,w:173.78412012171088,h:40};
+      let hit=false;for(let i=0;i<5;i++)hit=flowTest.collideRect(rect)||hit;
+      const clear=flowTest.bodyPoints(flowTest.state.bodies[0]).every(p=>p.x<rect.x||p.x>rect.x+rect.w||p.y<rect.y||p.y>rect.y+rect.h);
+      return {hit,clear};
     });
-    assert(ceiling.every(s=>s.impact&&s.peakVy>25&&s.impact.phase==='exhale'&&s.retreat>(s.angle===Math.PI/2?10:20)&&s.clear&&s.held),`Ordinary horizontal concha undersides must return every tested orientation to the cavity while exhale remains held, without penetration: ${JSON.stringify(ceiling)}`);
-
+    assert(valveCorner.hit&&valveCorner.clear,'The small rotated outline must resolve an actual membrane corner overlap');
+    const sharedContact=await page.evaluate(()=>{
+      const neck=flowTest.obstacles.find(o=>o.id==='neck'),x=flowTest.center(neck.y)-12;
+      flowTest.seedDuo([{x,y:neck.y+104},{x,y:neck.y+140}]);flowTest.input(true);
+      let clear=true;
+      for(let i=0;i<240;i++){flowTest.advance(1/120);for(const b of flowTest.state.bodies)for(const p of flowTest.bodyPoints(b))if(flowTest.inSolid(p.x,p.y))clear=false;}
+      return {contacts:flowTest.state.pairContacts,clear,failed:flowTest.state.failed};
+    });
+    assert(sharedContact.contacts>0&&sharedContact.clear&&!sharedContact.failed,'The full-map neck must produce actual mutual contacts without tissue penetration');
+    const falling=await page.evaluate(()=>[ [1,1],[.62,.25] ].map(([size,mass])=>{
+      const b={x:320,y:5000,vx:0,vy:0,angle:.4,omega:0,size,mass};
+      for(let i=0;i<240;i++)flowTest.integrateBody(b,{x:0,y:0},1/120);
+      return b;
+    }));
+    assert(falling.every(b=>b.y>5130&&b.vy>120&&b.angle===.4),'Zero airflow must accelerate both sizes into a noticeable fall without an orientation force');
     const duoChecks=await page.evaluate(()=>{
       const input=value=>window.dispatchEvent(new KeyboardEvent(value?'keydown':'keyup',{code:'Space'}));
-      flowTest.startDuo();input(true);flowTest.advance(6.1);
-      const jam=flowTest.state;flowTest.advance(54);const heldLong=flowTest.state;
-      flowTest.startDuo();let clearance=true,maxOverlap=0,firstEscape=null;
-      const route=[[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,.8],[true,2]];
-      for(const [held,seconds] of route){input(held);for(let i=0;i<Math.round(seconds*120)&&!flowTest.state.won;i++){
-        flowTest.advance(1/120);const s=flowTest.state;
-        for(const b of s.bodies)if(!b.escaped){const pts=flowTest.bodyPoints(b);for(let j=0;j<pts.length;j++){const a=pts[j],b=pts[(j+1)%pts.length];for(const t of [0,.25,.5,.75])if(flowTest.inSolid(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t))clearance=false;}}
-        if(!s.bodies.some(b=>b.escaped))maxOverlap=Math.max(maxOverlap,flowTest.pairManifold(...s.bodies)?.depth||0);
-        if(s.bodies.filter(b=>b.escaped).length===1&&!firstEscape)firstEscape=s;
-      }}
+      flowTest.startDuo();input(true);flowTest.advance(60);const heldLong=flowTest.state;
+      flowTest.startDuo();let refill=false,clearance=true,maxOverlap=0,firstEscape=null,visible=true,firstBad=null;
+      const visited=[new Set(),new Set()],crossed=[new Set(),new Set()];
+      for(let i=0;i<6000&&!flowTest.state.won&&!flowTest.state.failed;i++) {
+        const s=flowTest.state,lead=s.bodies.filter(b=>!b.escaped).sort((a,b)=>a.y-b.y)[0]||s.body;
+        const o=flowTest.obstacles.find(o=>lead.y>=o.y-80);
+        if(s.air<.2)refill=true;if(s.air>.85)refill=false;
+        let blow=!refill;
+        if(o&&lead.y<o.y+320&&!refill) {
+          if(lead.y<o.y-50)blow=true;
+          else if(o.kind==='gate')blow=flowTest.gateGap()>60||lead.y>o.y+160;
+          else if(o.kind==='valve')blow=s.elapsed<o.openUntil||(!s.held&&s.inhaleTime>=(o.window[0]+o.window[1])/2)||(s.held&&lead.y>o.y+100);
+          else if(o.material==='fishbone')blow=(i%10)<4;
+        }
+        input(blow);flowTest.advance(.05);const after=flowTest.state;
+        for(const [index,b] of after.bodies.entries()) {
+          visited[index].add(flowTest.regions.findIndex(r=>b.y>=r.top));
+          for(const o of flowTest.obstacles)if(b.y<o.y-(o.kind==='neck'?145:80))crossed[index].add(o.id);
+          if(b.escaped)continue;
+          visible=visible&&b.y>after.camera&&b.y<after.camera+after.viewHeight;
+          const pts=flowTest.bodyPoints(b);
+          for(let j=0;j<pts.length;j++){const a=pts[j],b=pts[(j+1)%pts.length];for(const t of [0,.25,.5,.75])if(flowTest.inSolid(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t)){clearance=false;if(!firstBad)firstBad={elapsed:after.elapsed,index,body:after.bodies[index],phase:after.breathPhase,inhaleTime:after.inhaleTime,rects:flowTest.blocks(flowTest.obstacles.find(o=>o.id==='membrane')),point:{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t}};}}
+        }
+        if(!after.bodies.some(b=>b.escaped))maxOverlap=Math.max(maxOverlap,flowTest.pairManifold(...after.bodies)?.depth||0);
+        if(after.bodies.filter(b=>b.escaped).length===1&&!firstEscape)firstEscape=after;
+      }
       const victory=flowTest.state;
       const a={x:300,y:600,vx:120,vy:20,omega:.4,angle:.35,size:1,mass:1};
       const b={x:330,y:607,vx:-50,vy:-10,omega:-.2,angle:-.4,size:.62,mass:.25};
       const energy=()=>[a,b].reduce((sum,b)=>sum+b.mass*(b.vx**2+b.vy**2+flowTest.bodyInertia(b)*b.omega**2)/2,0);
       const momentum=()=>[a.vx*a.mass+b.vx*b.mass,a.vy*a.mass+b.vy*b.mass];
       const before={energy:energy(),momentum:momentum()},hit=flowTest.collidePair(a,b),after={energy:energy(),momentum:momentum()};
-      return {jam,heldLong,victory,clearance,maxOverlap,firstEscape,hit,before,after,a,b};
+      return {heldLong,victory,clearance,maxOverlap,firstEscape,visible,firstBad,visited:visited.map(v=>[...v].sort()),crossed:crossed.map(v=>[...v]),hit,before,after,a,b};
     });
-    assert(duoChecks.jam.pairContacts>0&&!duoChecks.jam.won&&!duoChecks.jam.failed&&duoChecks.jam.gasps===0,'Shared exhale must produce a mutual-contact jam before automatic gasping');
-    assert(!duoChecks.heldLong.won&&duoChecks.heldLong.gasps>0,'Repeated automatic deep inhalation must not open the short-breath exit valve');
-    assert(duoChecks.victory.won&&!duoChecks.victory.failed&&duoChecks.victory.bodies.every(b=>b.escaped),'A keyboard-only breath sequence must free both bodies');
-    assert(duoChecks.clearance&&duoChecks.maxOverlap<.05,'Both full outlines must clear static solids; mutual solver overlap must remain below 0.05 world units');
+    assert(!duoChecks.heldLong.won,'Constant exhale must not bypass the restored breath-timed valves');
+    assert(duoChecks.victory.won&&!duoChecks.victory.failed&&duoChecks.victory.bodies.every(b=>b.escaped),'A keyboard-only breathing route must free both bodies through the full map');
+    assert(duoChecks.clearance&&duoChecks.maxOverlap<.05,`Both outlines must clear the organ solids and one another: ${JSON.stringify({clear:duoChecks.clearance,overlap:duoChecks.maxOverlap,firstBad:duoChecks.firstBad})}`);
+    assert(duoChecks.visible,'The following camera must keep both active bodies in view');
+    assert(duoChecks.crossed.every(ids=>ids.length===12)&&duoChecks.visited.every(v=>JSON.stringify(v)==='[0,1,2,3]'),'Both bodies must traverse four organs and twelve obstacles');
     assert(duoChecks.firstEscape&&!duoChecks.firstEscape.won,'One escaped object must not finish the level');
+    const escapedIndex=duoChecks.firstEscape.bodies.findIndex(b=>b.escaped);
+    assert.deepEqual(duoChecks.victory.bodies[escapedIndex],duoChecks.firstEscape.bodies[escapedIndex],'An escaped body must stay fixed while its partner continues');
     assert(duoChecks.hit&&duoChecks.after.energy<=duoChecks.before.energy+1e-6,'Mass-aware contact must dissipate energy');
     for(let i=0;i<2;i++)assert(Math.abs(duoChecks.before.momentum[i]-duoChecks.after.momentum[i])<1e-7,'Body contacts must conserve linear momentum');
     assert(Math.abs(duoChecks.a.omega-.4)>.1&&Math.abs(duoChecks.b.omega+.2)>.1,'An off-center mutual contact must rotate the bodies');
     assert.equal(await page.locator('#progress').textContent(),'2 / 2');
     await page.locator('#again').click();
-    assert((await state()).duoMode&&(await state()).bodies.length===2&&!(await state()).running,'Retry must reset the same two-body level');
-    const escapeRetained=await page.evaluate(()=>{
-      flowTest.startDuo();const route=[[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,2.4],[true,2],[false,.8],[true,2]];
-      outer:for(const [held,seconds] of route){flowTest.input(held);for(let i=0;i<seconds*120;i++){flowTest.advance(1/120);if(flowTest.state.bodies.some(b=>b.escaped))break outer;}}
-      const before=flowTest.state,index=before.bodies.findIndex(b=>b.escaped);
-      flowTest.input(false);flowTest.advance(2);return {before,after:flowTest.state,index};
+    assert((await state()).duoMode&&(await state()).bodies.length===2&&!(await state()).running,'Retry must preserve both bodies and the full map');
+    const restored=await page.evaluate(()=>{
+      const results=[];
+      for(const index of [0,1]) {
+        const states=[{x:320,y:5000},{x:320,y:5100}];states[index]={x:600,y:3490,vy:180};
+        flowTest.seedDuo(states);flowTest.advance(.8);results.push(flowTest.state.failureReason);
+      }
+      const valve=flowTest.obstacles.find(o=>o.id==='membrane');
+      flowTest.seedDuo([{x:flowTest.center(valve.y),y:valve.y+100},{x:320,y:5000}]);
+      flowTest.input(true);flowTest.advance(.05);flowTest.input(false);flowTest.advance(.45);flowTest.input(true);flowTest.advance(.05);
+      const opened=valve.openUntil>flowTest.state.elapsed;
+      flowTest.seedDuo([{x:200,y:6884},{x:440,y:6500}]);flowTest.advance(4);
+      return {food:results,opened,floor:flowTest.state};
     });
-    assert(escapeRetained.index>=0&&!escapeRetained.before.won,'The first escape must be independently tracked');
-    assert.deepEqual(escapeRetained.after.bodies[escapeRetained.index],escapeRetained.before.bodies[escapeRetained.index],'A body already outside must stay outside during inhalation');
-    const floor=await page.evaluate(()=>{flowTest.seedDuo([{x:200,y:884},{x:440,y:810}]);flowTest.advance(4);return flowTest.state;});
-    assert(floor.failed&&floor.failureReason==='fell','Either foreign body reaching the pulmonary floor must fail the pair');
-    await page.locator('#duo').click();
-    const sharp=await page.evaluate(()=>{flowTest.seedDuo([{x:515,y:610},{x:200,y:790}]);flowTest.advance(.02);return flowTest.state;});
-    assert(sharp.injuries>0,'The new fishbone tip must be an actual contact hazard');
+    assert(restored.food.every(r=>r==='esophagus'),'Either body entering the real esophagus must fail the pair');
+    assert(restored.opened,'The leading body must open the restored membrane even if its partner is far below');
+    assert(restored.floor.failed&&restored.floor.failureReason==='fell','Either body falling into the real lung floor must fail the pair');
     await page.locator('#duo').click();
     if(process.env.FLOW_SCREENSHOT)await page.screenshot({path:process.env.FLOW_SCREENSHOT.replace(/\.png$/,'-duo.png'),fullPage:true});
     await page.locator('#reset').click();
-    assert(!(await state()).duoMode&&(await state()).body.y===6600,'Return to the full journey must clear the pair');
+    assert(!(await state()).duoMode&&(await state()).body.y===6600,'Return to the single-body journey must clear the pair');
 
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
     const touch = await mobile.newPage();
@@ -409,7 +436,7 @@ const { chromium } = require('playwright');
     assert(duoButton.y+duoButton.height<=844&&await touch.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Two-body HUD and breath control must fit mobile');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:duoButton.x+40,y:duoButton.y+25}]});
     await touch.evaluate(()=>flowTest.advance(.5));
-    assert(await touch.evaluate(()=>flowTest.state.bodies.every(b=>b.y<790)),'Touch exhale must drive both objects through the shared field');
+    assert(await touch.evaluate(()=>flowTest.state.bodies.every(b=>b.y<6600)),'Touch exhale must drive both objects through the shared field');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
     assert.equal(await touch.evaluate(()=>flowTest.state.held),false);
     await touch.locator('#duo').click();
@@ -427,7 +454,7 @@ const { chromium } = require('playwright');
       await page.screenshot({ path: process.env.FLOW_SCREENSHOT, fullPage: true });
       await touch.screenshot({ path: process.env.FLOW_SCREENSHOT.replace(/\.png$/, '-mobile.png'), fullPage: true });
     }
-    console.log(`PASS: general horizontal-wall rebound/held-exhale retreat/angle coverage/whole-outline clearance; two-body keyboard-only victory, 60-second constant-hold blocked by exit valve, whole-outline clearance, shared-field/contact jam, mass/momentum/energy/torque, independent escape retention, pair floor/fish hazard/retry, fixed camera and mobile controls; constant-exhale neck wedging, inhale retreat/ramp torque/real slot clearance, practice victory/retry/full-level return, free-flight orientation/no inhale unlock, nonlinear refill/airflow, uninterruptible empty-air gasp/full recovery, gentle automatic breathing, forced keyboard/touch HUD and reset, irregular outline/angle-dependent clearance, contact torque/friction/energy bounds, elastic curved walls/low-speed settling, fast fishbone contact, paired vocal folds, bilateral concha passages, esophageal failure/retry, release inertia, flow/reversal/recirculation, pulmonary and three-prick failure/cooldown, four-organ victory (${victory.elapsed.toFixed(1)}s, ${victory.injuries} pricks / ${routes.count} obstacles) with full-outline clearance, particle trails/solids, keyboard/pointer/blur, mobile touch/cancel; no runtime errors.`);
+    console.log(`PASS: off-center roof rebound grace and small-body membrane corner separation; faster zero-flow falling for both masses; full-map two-body keyboard victory (${duoChecks.victory.elapsed.toFixed(1)}s), four organs/twelve obstacles for both, following camera, restored esophagus/membrane/floor hazards, contact mass/momentum/energy/torque, independent escape retention and mobile controls; constant-exhale neck wedging, inhale retreat/ramp torque/real slot clearance, practice victory/retry/full-level return, free-flight orientation/no inhale unlock, nonlinear refill/airflow, uninterruptible empty-air gasp/full recovery, gentle automatic breathing, forced keyboard/touch HUD and reset, irregular outline/angle-dependent clearance, contact torque/friction/energy bounds, elastic curved walls/low-speed settling, fast fishbone contact, paired vocal folds, bilateral concha passages, esophageal failure/retry, release inertia, flow/reversal/recirculation, pulmonary and three-prick failure/cooldown, four-organ victory (${victory.elapsed.toFixed(1)}s, ${victory.injuries} pricks / ${routes.count} obstacles) with full-outline clearance, particle trails/solids, keyboard/pointer/blur, mobile touch/cancel; no runtime errors.`);
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));
