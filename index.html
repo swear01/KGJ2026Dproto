@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#c894f3">
+<title>FREE FLOW — 一口自由</title>
+<style>
+  :root { color-scheme: light; --ink: #37116a; --muted: #e0c9ff; --lime: #ffe44b; --pink: #ff68b9; --aqua: #42edee; --paper: #fff9ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--paper); background: #c894f3; background-image: radial-gradient(#eed4ff 2px, transparent 2px), linear-gradient(135deg, #a579f0, #e9b7f6); background-size: 26px 26px, 100% 100%; font: 15px/1.65 'Arial Rounded MT Bold', 'PingFang TC', system-ui, sans-serif; }
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible { outline: 4px solid var(--aqua); outline-offset: 5px; }
+  .shell { max-width: 1230px; margin: auto; padding: 22px 38px 20px; }
+  header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 18px; border-bottom: 3px solid #fff9ff88; }
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 900; letter-spacing: .13em; color: var(--ink); }
+  .mark { width: 32px; height: 32px; border: 3px solid var(--paper); border-radius: 11px; display: grid; place-items: center; color: var(--paper); background: #803bdf; box-shadow: 3px 3px 0 var(--ink); font-size: 22px; transform: rotate(-8deg); }
+  .prototype { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 20px; padding: 4px 11px; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 28px; padding-top: 24px; }
+  .stage { position: relative; min-width: 0; height: min(760px, calc(100dvh - 140px)); min-height: 490px; border: 5px solid var(--paper); border-radius: 24px; box-shadow: 0 0 0 3px var(--ink), 8px 9px 0 #6525a988; overflow: hidden; background: #351572; }
+  canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+  .stage-tag { position: absolute; left: 16px; top: 14px; padding: 4px 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); color: var(--ink); font-size: 10px; font-weight: 900; letter-spacing: .1em; pointer-events: none; box-shadow: 3px 3px 0 #37116a66; }
+  .stage-foot { position: absolute; left: 16px; bottom: 14px; max-width: calc(100% - 32px); padding: 4px 9px; border: 2px solid #fff9ff99; border-radius: 9px; background: #37116ae8; color: var(--paper); font-size: 11px; pointer-events: none; }
+  aside { display: flex; flex-direction: column; padding: 18px 18px 14px; border: 4px solid var(--paper); border-radius: 24px; background: #6427bc; box-shadow: 0 0 0 3px var(--ink), 7px 8px 0 #6525a988; }
+  .eyebrow { color: var(--aqua); font-size: 10px; font-weight: 900; letter-spacing: .12em; margin: 0 0 12px; }
+  h1 { font: 1000 clamp(54px, 5.8vw, 76px)/.95 'Arial Rounded MT Bold', system-ui, sans-serif; letter-spacing: -.065em; margin: 0 0 18px -3px; color: var(--lime); -webkit-text-stroke: 2px var(--paper); paint-order: stroke fill; text-shadow: 4px 5px 0 var(--ink); transform: rotate(-3deg); }
+  h1 span { display: block; color: var(--pink); }
+  .subtitle { font-size: 22px; font-weight: 900; letter-spacing: .1em; margin: 0 0 12px; }
+  .intro { color: var(--paper); margin: 0; font-size: 12px; }
+  .organ-feel { color: var(--aqua); font-size: 11px; margin: 10px 0 0; }
+  .route { display: flex; justify-content: space-between; gap: 5px; margin-top: 17px; color: var(--paper); font-size: 10px; font-weight: 800; }
+  .route span { padding: 3px 0; border: 2px solid #bb83f0; border-radius: 8px; flex: 1; text-align: center; }
+  .route span.current { border-color: var(--paper); color: var(--ink); background: var(--lime); box-shadow: 2px 2px 0 var(--ink); }
+  .route span.passed { background: #a348ce; }
+  .stats { border-top: 2px dashed #c997f0; margin-top: 22px; padding-top: 16px; }
+  .stat-row { display: flex; align-items: baseline; justify-content: space-between; }
+  .label { color: var(--paper); font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+  .number { font-size: 29px; font-weight: 900; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--lime); text-shadow: 2px 2px 0 var(--ink); }
+  .number small { font-size: 12px; color: var(--paper); }
+  .track { height: 10px; background: var(--ink); border: 2px solid var(--paper); border-radius: 8px; margin: 9px 0 18px; overflow: hidden; }
+  .fill { width: 0; height: 100%; background: var(--lime); }
+  #air-fill { background: var(--aqua); }
+  .irritation-row { color: #ffdded; font-size: 10px; }
+  .irritation-row .track { margin: 7px 0 12px; }
+  #irritation-fill { background: #ff6b8f; }
+  .overlay.failure .big { color: var(--pink); }
+  .breath-state { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 800; color: var(--aqua); min-height: 30px; }
+  .dot { width: 9px; height: 9px; flex-shrink: 0; border: 2px solid var(--paper); border-radius: 50%; background: currentColor; }
+  #hint { font-size: 11px; color: var(--paper); min-height: 40px; margin: 8px 0 16px; }
+  .controls { margin-top: auto; }
+  #breath { width: 100%; background: var(--lime); color: var(--ink); border: 4px solid var(--paper); border-radius: 17px; box-shadow: 0 0 0 2px var(--ink), 0 6px 0 var(--ink); padding: 12px 10px; touch-action: none; user-select: none; -webkit-user-select: none; transition: background .15s, transform .1s; }
+  #breath.active { background: var(--pink); transform: translateY(3px); box-shadow: 0 0 0 2px var(--ink), 0 3px 0 var(--ink); }
+  #breath.forced { background: var(--aqua); }
+  #breath strong { display: block; font-size: 20px; font-weight: 900; letter-spacing: .04em; }
+  #breath small { font-size: 10px; font-weight: 700; }
+  .keyhint { text-align: center; color: var(--muted); font-size: 10px; margin: 12px 0 10px; }
+  kbd { border: 2px solid var(--paper); background: var(--ink); color: var(--paper); border-radius: 5px; padding: 1px 6px; font: inherit; }
+  .bottom-row { display: flex; justify-content: space-between; align-items: center; }
+  #reset { background: none; color: var(--paper); border: 0; padding: 3px 0; font-size: 11px; font-weight: 800; }
+  #reset:hover { color: var(--lime); }
+  #practice, #duo { border: 2px solid var(--paper); border-radius: 8px; background: #8c49d7; color: var(--paper); padding: 2px 7px; font-size: 10px; font-weight: 800; }
+  #time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .overlay { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; background: #481581ed; padding: 20px; }
+  .overlay[hidden] { display: none; }
+  .overlay .big { font-size: 68px; line-height: 1; color: var(--lime); font-weight: 1000; letter-spacing: -.06em; -webkit-text-stroke: 3px var(--paper); paint-order: stroke fill; text-shadow: 5px 6px 0 var(--ink); transform: rotate(-5deg); }
+  .overlay p { color: var(--paper); }
+  .overlay button { border: 4px solid var(--paper); border-radius: 13px; background: var(--lime); color: var(--ink); padding: 12px 25px; margin: auto; font-weight: 900; box-shadow: 4px 5px 0 var(--ink); }
+  footer { display: flex; justify-content: space-between; gap: 10px; margin-top: 17px; font-size: 10px; font-weight: 800; color: var(--ink); letter-spacing: .06em; }
+  @media (max-width: 760px) {
+    .shell { padding: 14px 16px; }
+    header { padding-bottom: 12px; }
+    .prototype { font-size: 8px; padding: 3px 7px; }
+    main { grid-template-columns: minmax(0, 1fr) 200px; gap: 17px; padding-top: 18px; }
+    .stage { height: 630px; min-height: 0; }
+    aside { padding: 12px; }
+    h1 { font-size: 50px; }
+    .subtitle { font-size: 17px; }
+    .stats { margin-top: 18px; }
+    .stage-tag, .stage-foot { left: 10px; font-size: 8px; }
+  }
+  @media (max-width: 520px) {
+    main { display: flex; flex-direction: column; gap: 15px; }
+    .stage { order: 1; height: min(46dvh, 500px); min-height: 280px; border-width: 4px; border-radius: 19px; }
+    aside { display: contents; }
+    .title-block { order: 0; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 0 15px; color: var(--ink); }
+    h1 { font-size: 39px; margin: 0; grid-row: 1 / 4; }
+    .eyebrow { margin: 0; font-size: 8px; color: var(--ink); }
+    .subtitle { margin: 0; font-size: 16px; }
+    .intro { font-size: 10px; color: var(--ink); }
+    .route, .organ-feel { display: none; }
+    .stats { order: 2; margin: 0; padding: 10px 12px; border: 3px solid var(--paper); border-radius: 15px; background: #6427bc; display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; box-shadow: 3px 3px 0 var(--ink); }
+    .track { margin: 7px 0 6px; height: 8px; }
+    .number { font-size: 22px; }
+    .breath-state { font-size: 10px; min-height: 22px; }
+    #hint { grid-column: 1 / -1; min-height: 22px; margin: 0; font-size: 10px; }
+    .controls { order: 3; position: sticky; bottom: 0; background: #c894f3; padding: 7px 2px 10px; border-radius: 15px 15px 0 0; }
+    #breath { padding: 9px; border-width: 3px; }
+    #breath strong { font-size: 17px; }
+    .keyhint { display: none; }
+    .bottom-row { margin-top: 9px; }
+    #reset, #time { color: var(--ink); }
+    footer { margin-top: 5px; font-size: 8px; }
+    .stage-tag { padding: 2px 7px; top: 9px; }
+    .stage-foot { bottom: 9px; padding: 2px 5px; max-width: calc(100% - 20px); }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header><div class="brand"><span class="mark">≈</span> FAUST GAME JAM</div><div class="prototype">ONE BUTTON / PROTOTYPE 10</div></header>
+  <main>
+    <section class="stage" aria-label="從肺部到鼻腔的長途關卡">
+      <canvas id="game" aria-label="按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。">請使用支援 Canvas 的瀏覽器。</canvas>
+      <div class="stage-tag" id="area">01 / 肺部 · LUNGS</div>
+      <div class="stage-foot" id="stage-hint">向上吐氣。前面有東西擋著。</div>
+      <div class="overlay" id="win" hidden role="dialog" aria-modal="true" aria-labelledby="win-title">
+        <div class="eyebrow" id="ending-label">YOU CAN BREATHE AGAIN.</div>
+        <div class="big" id="win-title">自由了。</div>
+        <p id="result"></p><button id="again">再呼吸一次 ↻</button>
+      </div>
+    </section>
+    <aside>
+      <div class="title-block"><p class="eyebrow">A LONG WAY TO FREEDOM.</p><h1>FREE<span>FLOW.</span></h1><p class="subtitle" id="subtitle">一口自由</p><p class="intro">從肺部，一路到鼻腔。<br>每個阻礙，都需要不同的一口氣。</p></div>
+      <p class="organ-feel" id="organ-feel">肺泡腔室 · 分岔匯流</p>
+      <div class="route" aria-label="旅程"><span>肺部</span><span>氣管</span><span>咽喉</span><span>鼻腔</span></div>
+      <div class="stats">
+        <div><div class="stat-row"><span class="label" id="progress-label">距離自由</span><span class="number"><span id="progress">0</span><small> %</small></span></div><div class="track"><div class="fill" id="progress-fill"></div></div></div>
+        <div><div class="stat-row"><span class="label">剩餘氣量</span><span class="number"><span id="air">100</span><small> %</small></span></div><div class="track"><div class="fill" id="air-fill"></div></div></div>
+        <div class="irritation-row"><span>喉嚨刺激 <b id="irritation">0</b> / 100 · 三次刺碰失敗</span><div class="track"><div class="fill" id="irritation-fill"></div></div></div>
+        <div class="breath-state"><span class="dot"></span><span id="state" role="status">準備好，就吐一口氣。</span></div>
+        <p id="hint">按住往上推，放開往下帶。</p>
+      </div>
+      <div class="controls">
+        <button id="breath" aria-label="按住吐氣，放開吸氣" aria-describedby="state"><strong id="button-label">↑ 按住吐氣</strong><small id="button-note">放開慢吸氣 · 耗盡會強制深吸</small></button>
+        <p class="keyhint">也可以按住 <kbd>SPACE</kbd></p>
+        <div class="bottom-row"><button id="reset">↻ 重新開始</button><button id="practice">吸氣練習</button><button id="duo">雙異物</button><span id="time">00:00</span></div>
+      </div>
+    </aside>
+  </main>
+  <footer><span>自由流動 / FREE FLOW</span><span>肺部 → 氣管 → 咽喉 → 鼻腔</span></footer>
+</div>
+<script>
+(() => {
+  'use strict';
+  const canvas = document.querySelector('#game'), ctx = canvas.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const art={ink:'#37116a',paper:'#fff9ff',yellow:'#ffe44b',pink:'#ff68b9',cyan:'#42edee'};
+  const W = 640, H = 7000, VIEW = 960, START = 6600, EXIT = 90, STEP = 1 / 120;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const outline=[[-24,-4],[-12,-15],[4,-12],[22,-1],[11,13],[-6,16],[-19,7]].map(([x,y])=>({x,y}));
+  let twiceArea=0,cx=0,cy=0;
+  for(let i=0;i<outline.length;i++) {
+    const a=outline[i],b=outline[(i+1)%outline.length],cross=a.x*b.y-a.y*b.x;
+    twiceArea+=cross;cx+=(a.x+b.x)*cross;cy+=(a.y+b.y)*cross;
+  }
+  for(const p of outline){p.x-=cx/(3*twiceArea);p.y-=cy/(3*twiceArea);}
+  const BR=Math.max(...outline.map(p=>Math.hypot(p.x,p.y)));
+  let inertia=0;
+  for(let i=0;i<outline.length;i++) {
+    const a=outline[i],b=outline[(i+1)%outline.length],cross=a.x*b.y-a.y*b.x;
+    inertia+=cross*(a.x*a.x+a.x*b.x+b.x*b.x+a.y*a.y+a.y*b.y+b.y*b.y);
+  }
+  inertia/=6*twiceArea;
+  const profiles = [[40,320,390],[380,315,400],[700,305,430],[1100,325,460],[1450,320,470],[1700,320,390],[1850,340,350],[2150,365,430],[2550,280,460],[3000,350,470],[3300,320,250],[3850,320,240],[4250,320,240],[4320,320,240],[4420,340,340],[4510,330,380],[4660,320,270],[4700,320,240],[5150,320,240],[5400,320,180],[5650,320,225],[5900,320,390],[6200,320,525],[6550,320,515],[6800,320,430],[7000,320,310]];
+  const obstacles = [
+    { id:'bronchus', y:5680, side:'left', gap:96, name:'卡住的魚刺', kind:'shelf', material:'fishbone' },
+    { id:'trachea', y:4830, side:'right', gap:92, name:'倒鉤魚刺', kind:'shelf', material:'fishbone' },
+    { id:'neck', y:4320, gap:35, name:'喉頭窄口 · 吸氣脫困', kind:'neck' },
+    { id:'vocal', y:3690, name:'喉頭 · 成對聲帶', kind:'gate' },
+    { id:'membrane', y:3160, name:'咽喉薄膜', kind:'valve', window:[.32,.62], openUntil:0 },
+    { id:'throat', y:2880, side:'left', gap:76, name:'會厭軟瓣', kind:'shelf', material:'soft' },
+    { id:'fish-throat', y:2520, side:'right', gap:100, name:'咽喉魚刺', kind:'shelf', material:'fishbone' },
+    { id:'palate', y:2170, side:'right', gap:74, name:'軟顎彎道', kind:'shelf', material:'soft' },
+    { id:'nasopharynx', y:1780, name:'鼻咽軟組織', kind:'valve', window:[.85,1.15], openUntil:0 },
+    { id:'nasal1', y:1360, side:'left', gap:70, name:'下鼻甲 · 厚黏膜', kind:'shelf', material:'turbinate' },
+    { id:'nasal2', y:985, side:'left', gap:66, name:'中鼻甲 · 捲曲鼻道', kind:'shelf', material:'turbinate' },
+    { id:'nasal3', y:610, side:'left', gap:64, name:'上鼻甲 · 嗅覺區', kind:'shelf', material:'turbinate' }
+  ];
+  const neck=obstacles.find(o=>o.kind==='neck');
+  function bounds(y) {
+    let c=profiles.at(-1)[1], width=profiles.at(-1)[2];
+    for(let i=1;i<profiles.length;i++) if(y<=profiles[i][0]) {
+      const a=profiles[i-1], b=profiles[i], t=clamp((y-a[0])/(b[0]-a[0]),0,1), s=t*t*(3-2*t);
+      c=a[1]+(b[1]-a[1])*s; width=a[2]+(b[2]-a[2])*s; break;
+    }
+    const trachea=clamp((y-3350)/180,0,1)*clamp((5400-y)/180,0,1);
+    c+=Math.sin(y*.008)*15*(1-trachea);
+    width-=trachea*(11+11*Math.cos(y*Math.PI*2/105));
+    const fold=y<1700?10:6;
+    return [c-width/2+Math.sin(y*.023)*fold*(1-trachea),c+width/2+Math.sin(y*.019)*fold*(1-trachea)];
+  }
+  const center = y => { const [l,r]=bounds(y); return (l+r)/2; };
+  function lungSplit(y) {
+    const half=clamp((y-6020)/280,0,1)*(56+10*Math.sin(y*.007));
+    return [center(y)-half,center(y)+half];
+  }
+  function nasalSplit(y) {
+    const half=22*Math.min(clamp((y-120)/100,0,1),clamp((1650-y)/110,0,1));
+    return [center(y)-half,center(y)+half];
+  }
+  function dividerPolygon(top,bottom,split) {
+    const a=[],b=[];for(let y=top;y<=bottom;y+=10){const [l,r]=split(y);a.push({x:l,y});b.push({x:r,y});}
+    return [...a,...b.reverse()];
+  }
+  const structures=[{id:'lung-fissure',top:6020,bottom:6900,points:dividerPolygon(6020,6900,lungSplit)},
+    {id:'nasal-septum',top:120,bottom:1650,points:dividerPolygon(120,1650,nasalSplit)}];
+  function laneBounds(y,lane='left') {
+    const [l,r]=bounds(y),[a,b]=nasalSplit(y);return lane==='left'?[l,a]:[b,r];
+  }
+  function obstacleSide(o) {return o.material==='turbinate'&&nasalLane==='right'?(o.side==='left'?'right':'left'):o.side;}
+  function shelfShape(o,lane='left') {
+    const nasal=o.material==='turbinate',side=o.side, [l,r]=nasal?laneBounds(o.y):bounds(o.y);
+    const dir=side==='left'?1:-1,root=side==='left'?l-32:r+32,tip=side==='left'?r-o.gap:l+o.gap;
+    let coords;
+    if(o.material==='fishbone')coords=[[root,-5],[tip,-2],[tip+dir*10,0],[tip,2],[root,5]];
+    else if(o.material==='soft')coords=[[root,-95],[tip-dir*68,-55],[tip-dir*13,-24],[tip,0],[tip-dir*9,23],[tip-dir*55,42],[root,82]];
+    else if(nasal) {
+      const height=o.id==='nasal1'?92:o.id==='nasal2'?78:62;
+      coords=[[root,-height],[tip-dir*52,-height+8],[tip-dir*18,-height*.55],[tip-dir*4,-24],[tip,0],
+        [tip-dir*8,34],[tip-dir*24,48],[tip-dir*47,45],[tip-dir*58,27],[tip-dir*46,8],
+        [tip-dir*29,10],[tip-dir*26,24],[tip-dir*38,29],[root,height*.7]];
+    }
+    else if(o.material==='cartilage')coords=[[root,-45],[tip-dir*18,-34],[tip,-16],[tip,16],[tip-dir*18,34],[root,45]];
+    else coords=[[root,-27],[tip-dir*45,-25],[tip-dir*9,-19],[tip,0],[tip-dir*7,24],[tip-dir*40,32],[root,30]];
+    let points=coords.map(([x,dy])=>({x,y:o.y+dy}));
+    if(nasal&&lane==='right')points=points.map(p=>({x:2*center(o.y)-p.x,y:p.y}));
+    return points;
+  }
+
+  function fishbonePieces(o) {
+    const shaft=shelfShape(o),root=shaft[0].x,tip=shaft[2].x,dir=o.side==='left'?1:-1,pieces=[shaft];
+    for(let i=1;i<=5;i++) {
+      const x=root+(tip-root)*i/6;
+      for(const sign of [-1,1])pieces.push([{x:x-dir*6,y:o.y+sign*2},{x:x+dir*21,y:o.y+sign*(25+i%2*7)},{x:x+dir*6,y:o.y+sign*4}]);
+    }
+    return pieces;
+  }
+  function neckShapes(o) {
+    const c=center(o.y)-12,a=c-o.gap/2,b=c+o.gap/2;
+    const root=(side,dy)=>({x:bounds(o.y+dy)[side]+(side===0?-26:26),y:o.y+dy});
+    const left=[root(0,-110),{x:a,y:o.y-110},{x:a,y:o.y+52},{x:c-55,y:o.y+90},root(0,126),root(0,60)];
+    const right=[{x:b,y:o.y-110},root(1,-110),root(1,60),root(1,126),{x:c+50,y:o.y+90},{x:b,y:o.y+52}];
+    const ramp=[root(1,95),{x:c+38,y:o.y+108},{x:c-14,y:o.y+140},
+      {x:c+5,y:o.y+165},root(1,194)];
+    return [left,right,ramp];
+  }
+  const walls = [0,1].map(side=>Array.from({length:1393},(_,i)=>({x:bounds(40+i*5)[side],y:40+i*5})));
+  function wallBounds(y) {
+    if(y<40||y>=H)return bounds(y);
+    const i=Math.floor((y-40)/5),t=(y-walls[0][i].y)/5;
+    return walls.map(points=>points[i].x+(points[i+1].x-points[i].x)*t);
+  }
+  let branchEdge=[{x:bounds(2960)[1],y:2960},{x:607,y:3050},{x:628,y:3250},{x:626,y:3900},
+    {x:616,y:4050},{x:584,y:4090},{x:550,y:4040},{x:542,y:3480},{x:518,y:3340},{x:bounds(3290)[1],y:3290}];
+  for(let pass=0;pass<2;pass++) {
+    const rounded=[branchEdge[0]];
+    for(let i=1;i<branchEdge.length;i++) {
+      const a=branchEdge[i-1],b=branchEdge[i];
+      rounded.push({x:a.x*.75+b.x*.25,y:a.y*.75+b.y*.25},{x:a.x*.25+b.x*.75,y:a.y*.25+b.y*.75});
+    }
+    rounded.push(branchEdge.at(-1));branchEdge=rounded;
+  }
+  const esophagus={top:2960,bottom:4090,points:[...branchEdge,{x:bounds(3290)[1]-35,y:3290},{x:bounds(2960)[1]-35,y:2960}]};
+  const rightOutline=[...walls[1].filter(p=>p.y<2960),...branchEdge,...walls[1].filter(p=>p.y>3290)];
+  const inEsophagus=(x,y)=>y>=esophagus.top&&y<=esophagus.bottom&&pointInPolygon(x,y,esophagus.points);
+  const inAirway=(x,y)=>{const [l,r]=wallBounds(y);return x>=l&&x<=r||inEsophagus(x,y);};
+  const regions = [{name:'肺部',en:'LUNGS',bottom:7000,top:5400,color:'#ff7899',feel:'肺泡腔室 · 分岔匯流',speed:220}, {name:'氣管',en:'TRACHEA',bottom:5400,top:3300,color:'#35cedf',feel:'軟骨環 · 喉頭與聲帶',speed:305}, {name:'咽喉',en:'PHARYNX',bottom:3300,top:1700,color:'#f56bc6',feel:'會厭 · 食道岔口 · 軟顎',speed:235}, {name:'鼻腔',en:'NASAL CAVITY',bottom:1700,top:0,color:'#ffc65b',feel:'上／中／下鼻甲 · 捲曲鼻道',speed:265}];
+  const regionIndex = y => y>5400?0:y>3300?1:y>1700?2:3;
+  let failed=false,irritation=0,hurtCooldown=0,hurtFlash=0,injuries=0,failureReason='';
+  let body, heldKeys=false, heldPointer=null, running=false, won=false, air=1, flow=0, elapsed=0,practiceMode=false,duoMode=false,bodies=[],pairContacts=0;
+  let collisions=0, contact=0, bumpFlash=0, camera=H-VIEW, cleared=new Set(), impacts=[];
+  let inhaleTime=0, wasBlowing=true, nasalLane='left';
+  let breathPhase='rest-exhale',breathTime=0,breathStartAir=1,gasps=0;
+  const INHALE_SECONDS=2.4,GASP_SECONDS=1.8,REST_EXHALE_SECONDS=2.6;
+  let viewHeight=1480;
+  let particles=[], lastTime=0, accumulator=0, scale=1, ox=0, oy=0;
+  const held = () => heldKeys || heldPointer!==null;
+  const blowing = () => breathPhase==='exhale';
+  const inhaling = () => breathPhase==='inhale'||breathPhase==='gasp';
+  function startBreath(phase) {breathPhase=phase;breathTime=0;breathStartAir=air;}
+  function breathe(dt) {
+    const forced=breathPhase==='gasp'&&breathTime<GASP_SECONDS;
+    if(!forced) {
+      if(held()) {if(!blowing())startBreath('exhale');}
+      else if(blowing())startBreath('inhale');
+      else if(inhaling()&&breathTime>=(breathPhase==='gasp'?GASP_SECONDS:INHALE_SECONDS))startBreath('rest-exhale');
+      else if(breathPhase==='rest-exhale'&&breathTime>=REST_EXHALE_SECONDS)startBreath('inhale');
+    }
+    if(blowing()) {
+      air=Math.max(0,air-.15*dt);
+      if(air===0){startBreath('gasp');gasps++;return 0;}
+      return Math.min(1,air/.13);
+    }
+    const duration=breathPhase==='gasp'?GASP_SECONDS:inhaling()?INHALE_SECONDS:REST_EXHALE_SECONDS;
+    breathTime=breathTime+dt>=duration-1e-9?duration:breathTime+dt;
+    const t=breathTime/duration,curve=(1-Math.cos(Math.PI*t))/2;
+    const amount=inhaling()?1-breathStartAir:-.12;
+    const before=air;
+    air=t>=1?(inhaling()?1:breathStartAir+amount):breathStartAir+amount*curve;
+    return -(air-before)/dt*(breathPhase==='gasp'?.7:.4);
+  }
+  function reset() {
+    practiceMode=false;duoMode=false;bodies=[];pairContacts=0;
+    body={x:(bounds(START)[0]+lungSplit(START)[0])/2,y:START,vx:0,vy:0,angle:-.25,omega:0};
+    heldKeys=false;heldPointer=null;running=false;won=false;failed=false;irritation=0;hurtCooldown=0;hurtFlash=0;injuries=0;failureReason='';air=1;flow=0;elapsed=0;
+    collisions=0;contact=0;bumpFlash=0;impacts=[];cleared=new Set();viewHeight=1480;camera=clamp(START-viewHeight*.62,0,H-viewHeight);accumulator=0;
+    inhaleTime=0;wasBlowing=true;nasalLane='left';for(const o of obstacles)if(o.kind==='valve')o.openUntil=0;
+    breathPhase='rest-exhale';breathTime=0;breathStartAir=1;gasps=0;
+    particles=Array.from({length:90},()=>newParticle());
+    $('win').hidden=true; updateUI();
+  }
+  function startPractice() {
+    reset();practiceMode=true;body.x=center(neck.y)-12;body.y=neck.y+100;
+    viewHeight=960;camera=clamp(body.y-viewHeight*.62,0,H-viewHeight);updateUI();
+  }
+  function restart() {if(duoMode)startDuo();else if(practiceMode)startPractice();else reset();}
+  function begin() { if(!won&&!failed)running=true; }
+  function finish() {
+    won=true;heldKeys=false;heldPointer=null;
+    $('ending-label').textContent=duoMode?'TWO OUT. ONE BREATH.':practiceMode?'NICE BREATH.':'YOU CAN BREATHE AGAIN.';$('win-title').textContent=duoMode?'一起自由！':practiceMode?'通過了！':'自由了。';$('win').classList.remove('failure');
+    $('result').textContent=duoMode?`${elapsed.toFixed(1)} 秒，兩個異物都排出了。共同呼吸、不同慣性，碰撞也能幫彼此換角。`:practiceMode?`${elapsed.toFixed(1)} 秒通過窄口。吸氣退回寬腔、碰撞換角，再吐氣前進。`:`${Math.floor(elapsed)} 秒，穿越 ${cleared.size} 個阻礙。從肺到鼻腔，終於自由。`;
+    $('win').hidden=false;$('again').focus();
+  }
+  function fail(reason) {
+    if(won||failed)return;
+    failed=true;running=false;heldKeys=false;heldPointer=null;failureReason=reason;
+    $('ending-label').textContent='TAKE A BREATH. TRY AGAIN.';$('win-title').textContent=reason==='irritation'?'太刺激了。':reason==='esophagus'?'被吞下去了。':'又掉下去了。';
+    $('result').textContent=reason==='irritation'?'碰到三次魚刺，喉嚨承受不住了。換個節奏再試。':reason==='esophagus'?'異物進入食道，被吞嚥收縮帶往下方。留在有流線的氣道，再往鼻腔前進。':'異物掉回肺底了。用短吐氣維持浮力，再找時機穿過。';
+    $('win').classList.add('failure');$('win').hidden=false;$('again').focus();
+  }
+  function prick() {
+    if(hurtCooldown>0||failed)return;
+    injuries++;irritation=Math.min(100,injuries*34);hurtCooldown=.9;hurtFlash=.5;
+    if(irritation>=100)fail('irritation');
+  }
+  function upcoming() { return obstacles.find(o=>body.y>=o.y-(o.kind==='neck'?145:60)) || null; }
+  function gateGap(t=elapsed) { return 14+120*Math.pow((1+Math.sin(t*Math.PI*2/5.7))/2,4); }
+  function valveGap(o) {
+    if(blowing())return elapsed<o.openUntil?124:14;
+    if(!inhaling())return 14;
+    const [lo,hi]=o.window;
+    return 14+110*clamp(Math.min((inhaleTime-lo+.14)/.14,(hi+.14-inhaleTime)/.14),0,1);
+  }
+  function openings(o) {
+    const [l,r]=o.material==='turbinate'?laneBounds(o.y,nasalLane):bounds(o.y);
+    const side=obstacleSide(o),gap=o.kind==='neck'?o.gap:o.kind==='gate'?gateGap():o.kind==='valve'?valveGap(o):0;
+    const c=center(o.y)-(o.kind==='neck'?12:0);
+    return o.kind!=='shelf'?[c-gap/2,c+gap/2]:side==='left'?[r-o.gap,r]:[l,l+o.gap];
+  }
+  function blocks(o) {
+    if(o.kind==='shelf')return [];
+    const [a,b]=openings(o),[l,r]=bounds(o.y);
+    return [{x:l-10,y:o.y-20,w:a-l+10,h:40},{x:b,y:o.y-20,w:r+10-b,h:40}];
+  }
+  function vocalShapes(o,t=elapsed) {
+    const [l,r]=bounds(o.y),c=center(o.y),half=gateGap(t)/2;
+    const left=[{x:l-18,y:o.y-90},{x:c-half-38,y:o.y-74},{x:c-half-10,y:o.y-38},
+      {x:c-half,y:o.y-16},{x:c-half,y:o.y+16},{x:c-half-10,y:o.y+38},
+      {x:c-half-38,y:o.y+74},{x:l-18,y:o.y+90}];
+    return [left,left.map(p=>({x:2*c-p.x,y:p.y}))];
+  }
+  function polygonPath(points) {ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.closePath();}
+  // A fixed-camera puzzle: both bodies share the breath field and physical contacts.
+  const duoShapes=[
+    {name:'支氣管分流',color:'#ff94b8',points:[[320,625],[344,720],[344,900],[296,900],[296,720]]},
+    {name:'喉頭窄口',color:'#b888ff',points:[[100,250],[267.5,250],[267.5,412],[230,450],[100,486]]},
+    {name:'喉頭窄口',color:'#b888ff',points:[[302.5,250],[540,250],[540,486],[335,450],[302.5,412]]},
+    {name:'換角斜坡',color:'#92fff0',points:[[540,455],[323,468],[271,500],[290,525],[540,554]]},
+    {name:'下鼻甲',color:'#ff90cc',points:[[100,200],[305,200],[330,220],[316,239],[100,240]]},
+    {name:'上鼻甲',color:'#ff90cc',points:[[300,110],[540,110],[540,145],[315,145],[292,128]]},
+    {name:'魚刺',color:'#fff9ff',fish:true,points:[[540,596],[492,615],[540,622]]}
+  ].map(o=>({...o,points:o.points.map(([x,y])=>({x,y}))}));
+  function bodyInertia(b){return inertia*(b.size||1)**2;}
+  function startDuo() {
+    reset();duoMode=true;
+    bodies=[
+      {x:200,y:790,vx:0,vy:0,angle:-.25,omega:0,size:1,mass:1,color:art.yellow,name:'黃',escaped:false},
+      {x:440,y:810,vx:0,vy:0,angle:.25,omega:0,size:.62,mass:.25,color:art.pink,name:'粉',escaped:false}
+    ];
+    body=bodies[0];viewHeight=960;camera=0;particles=Array.from({length:90},()=>newParticle());updateUI();
+  }
+  function duoChannel(x,y) {
+    const t=clamp((y-550)/180,0,1),mix=t*t*(3-2*t);
+    const lane=x>320?440:200;
+    const upper=285+100*Math.exp(-(((y-235)/60)**2))-55*Math.exp(-(((y-135)/50)**2));
+    return {c:upper*(1-mix)+lane*mix,width:220*(1-mix)+160*mix};
+  }
+  function duoStream(x,y) {const {c,width}=duoChannel(x,y);return 260*220*(x-c)/width;}
+  function duoVelocity(x,y,t=elapsed,pressure=flow) {
+    const h=1,vx=(duoStream(x,y+h)-duoStream(x,y-h))/(2*h),vy=-(duoStream(x+h,y)-duoStream(x-h,y))/(2*h);
+    const limit=Math.min(1,340/Math.max(1,Math.hypot(vx,vy)));
+    return {x:vx*limit*pressure,y:vy*limit*pressure};
+  }
+  function pairManifold(a,b) {
+    const pa=bodyPoints(a),pb=bodyPoints(b);let depth=Infinity,nx=0,ny=0;
+    for(const polygon of [pa,pb])for(let i=0;i<polygon.length;i++) {
+      const p=polygon[i],q=polygon[(i+1)%polygon.length],length=Math.hypot(q.x-p.x,q.y-p.y);
+      const ax=-(q.y-p.y)/length,ay=(q.x-p.x)/length;
+      const da=pa.map(p=>p.x*ax+p.y*ay),db=pb.map(p=>p.x*ax+p.y*ay);
+      const overlap=Math.min(Math.max(...da)-Math.min(...db),Math.max(...db)-Math.min(...da));
+      if(overlap<=0)return null;
+      if(overlap<depth){depth=overlap;const sign=(b.x-a.x)*ax+(b.y-a.y)*ay>=0?1:-1;nx=ax*sign;ny=ay*sign;}
+    }
+    // Clip the actual polygons; the overlap centroid supplies a shared contact.
+    let clipped=pa;
+    for(let i=0;i<pb.length&&clipped.length;i++) {
+      const p=pb[i],q=pb[(i+1)%pb.length],side=v=>(q.x-p.x)*(v.y-p.y)-(q.y-p.y)*(v.x-p.x),out=[];
+      for(let j=0;j<clipped.length;j++) {
+        const u=clipped[j],v=clipped[(j+1)%clipped.length],du=side(u),dv=side(v);
+        if(du>=0)out.push(u);
+        if((du>=0)!==(dv>=0)){const t=du/(du-dv);out.push({x:u.x+(v.x-u.x)*t,y:u.y+(v.y-u.y)*t});}
+      }
+      clipped=out;
+    }
+    if(!clipped.length)return null;
+    return {nx,ny,depth,x:clipped.reduce((s,p)=>s+p.x,0)/clipped.length,y:clipped.reduce((s,p)=>s+p.y,0)/clipped.length};
+  }
+  function collidePair(a,b) {
+    if(a.escaped||b.escaped)return false;
+    const m=pairManifold(a,b);if(!m)return false;
+    const {nx,ny,x,y}=m,ma=1/a.mass,mb=1/b.mass,ia=ma/bodyInertia(a),ib=mb/bodyInertia(b);
+    const ra={x:x-a.x,y:y-a.y},rb={x:x-b.x,y:y-b.y};
+    const speed=(ax,ay)=>(b.vx-b.omega*rb.y-a.vx+a.omega*ra.y)*ax+(b.vy+b.omega*rb.x-a.vy-a.omega*ra.x)*ay;
+    const apply=(j,ax,ay)=>{a.vx-=j*ax*ma;a.vy-=j*ay*ma;a.omega-=(ra.x*ay-ra.y*ax)*j*ia;b.vx+=j*ax*mb;b.vy+=j*ay*mb;b.omega+=(rb.x*ay-rb.y*ax)*j*ib;};
+    const leverA=ra.x*ny-ra.y*nx,leverB=rb.x*ny-rb.y*nx,closing=speed(nx,ny);
+    if(closing<0) {
+      const impulse=-(1+(closing< -28?.38:0))*closing/(ma+mb+leverA**2*ia+leverB**2*ib);
+      apply(impulse,nx,ny);
+      const tx=-ny,ty=nx,ta=ra.x*ty-ra.y*tx,tb=rb.x*ty-rb.y*tx;
+      apply(clamp(-speed(tx,ty)/(ma+mb+ta**2*ia+tb**2*ib),-.18*impulse,.18*impulse),tx,ty);
+    }
+    const correction=(m.depth+.001)/(ma+mb);
+    a.x-=nx*correction*ma;a.y-=ny*correction*ma;b.x+=nx*correction*mb;b.y+=ny*correction*mb;
+    return true;
+  }
+  function collideDuoBody() {
+    let hit=false;
+    const left=support(1,0),right=support(-1,0);
+    if(body.x-left.distance<100)hit=resolve(1,0,100-body.x+left.distance,left,.58,.12,true)||hit;
+    if(body.x+right.distance>540)hit=resolve(-1,0,body.x+right.distance-540,right,.58,.12,true)||hit;
+    for(const o of duoShapes)if(collidePolygon(o.points,o.fish?.42:.28,o.fish?.25:.35)) {hit=true;if(o.fish)prick();}
+    if(body.y+support(0,-1).distance>900&&elapsed>3)fail('fell');
+    if(hit){if(contact<=0){collisions++;bumpFlash=.22;}contact=.12;}
+  }
+  function stepDuo(dt) {
+    for(const b of bodies)if(!b.escaped) {
+      const wind=duoVelocity(b.x,b.y),drag=2.7*b.size**2/b.mass;
+      b.vx+=(wind.x-b.vx)*drag*dt;b.vy+=((wind.y-b.vy)*drag+42)*dt;
+      b.omega*=Math.exp(-.65*dt);b.angle+=b.omega*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;
+    }
+    let touched=false;
+    for(let pass=0;pass<8;pass++) {
+      for(const b of bodies)if(!b.escaped){body=b;collideDuoBody();}
+      touched=collidePair(bodies[0],bodies[1])||touched;
+    }
+    if(touched)pairContacts++;
+    for(const b of bodies)if(!b.escaped&&Math.max(...bodyPoints(b).map(p=>p.y))<70)b.escaped=true;
+    body=bodies.find(b=>!b.escaped)||bodies[0];
+    if(bodies.every(b=>b.escaped)&&!failed)finish();
+  }
+  function duoHint() {
+    if(failed)return '任一異物落底，或三次刺碰，就要一起重試。';
+    if(won)return '兩個都排出了！可以試試另一種呼吸節奏。';
+    if(bodies.some(b=>b.escaped))return '一個已安全排出！繼續用呼吸引導留下的異物。';
+    if(breathPhase==='gasp')return '強制深吸會同時拉回兩個異物，注意下方肺底。';
+    const big=bodies[0];
+    if(big.y<455&&big.y>245)return '黃異物卡窄口？吸氣退回青色斜坡換角；粉異物可能會撞到它。';
+    if(big.y<245)return '鼻甲形成彎道，短吸氣煞車；已排出的異物不會再被吸回。';
+    return '粉小、黃大：吸吐影響兩者。匯流會相撞，窄口要分先後。';
+  }
+  function drawCharacter(b) {
+    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);ctx.scale(b.size,b.size);
+    stickerShape(outline,b.color,5);
+    for(const x of [-7,6]){ctx.beginPath();ctx.ellipse(x,-3,4.7,5.8,0,0,Math.PI*2);ctx.fillStyle=art.ink;ctx.fill();ctx.beginPath();ctx.arc(x-1,-5,1.5,0,Math.PI*2);ctx.fillStyle=art.paper;ctx.fill();}
+    ctx.beginPath();ctx.moveTo(-5,6);ctx.quadraticCurveTo(0,12,5,6);ctx.strokeStyle=art.ink;ctx.lineWidth=2;ctx.stroke();ctx.restore();
+  }
+  function drawDuo(dt) {
+    ctx.fillStyle='#6231aa';ctx.fillRect(0,0,W,960);
+    for(let y=20;y<960;y+=38)for(let x=20;x<W;x+=38){ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fillStyle='#ffffff16';ctx.fill();}
+    const tissue=ctx.createLinearGradient(0,0,0,900);tissue.addColorStop(0,'#ffc35b');tissue.addColorStop(.45,'#bd77ef');tissue.addColorStop(1,'#ff6faf');
+    ctx.fillStyle=tissue;ctx.fillRect(0,0,100,960);ctx.fillRect(540,0,100,960);ctx.fillRect(100,900,440,60);
+    for(const x of [100,540]){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,900);ctx.strokeStyle=art.ink;ctx.lineWidth=16;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=5;ctx.stroke();}
+    for(const o of duoShapes)stickerShape(o.points,o.color,5);
+    moveParticles(dt);
+    for(const p of particles)if(p.trail.length>1){ctx.beginPath();ctx.moveTo(p.trail[0].x,p.trail[0].y);for(const v of p.trail)ctx.lineTo(v.x,v.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle=flow>.1?'#ffe44b99':'#42edee99';ctx.lineWidth=2.5;ctx.stroke();}
+    stickerTag('↑ 兩個都要排出',320,52,art.yellow);
+    ctx.beginPath();ctx.moveTo(112,70);ctx.lineTo(528,70);ctx.setLineDash([7,9]);ctx.strokeStyle=art.yellow;ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);
+    stickerTag('鼻甲彎道',425,178,art.paper);
+    stickerTag('35 · 窄面通過',285,286,art.paper);
+    stickerTag('↓ 吸氣 · 退回換角',286,575,art.cyan);
+    stickerTag('匯流：會互相碰撞',320,615,art.paper);
+    for(const b of bodies)if(!b.escaped)drawCharacter(b);
+    ctx.font='900 16px system-ui';ctx.textAlign='center';inkText('黃 · 大 / 重',200,867,art.yellow);inkText('粉 · 小 / 輕',440,867,art.pink);
+    inkText('肺底 · 掉下去會失敗',320,928,art.paper);
+    ctx.font='900 13px system-ui';inkText('魚刺 ⚠',486,651,art.paper);
+  }
+
+  function bodyPoints(b=body) {
+    const c=Math.cos(b.angle),s=Math.sin(b.angle),size=b.size||1;
+    return outline.map(p=>({x:b.x+size*(p.x*c-p.y*s),y:b.y+size*(p.x*s+p.y*c)}));
+  }
+  function bodyWidth() {
+    const points=bodyPoints();return Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x));
+  }
+  function support(nx,ny,points=bodyPoints()) {
+    let distance=Infinity,contacts=[];
+    for(const p of points) {
+      const d=(p.x-body.x)*nx+(p.y-body.y)*ny;
+      if(d<distance-1e-6){distance=d;contacts=[p];}
+      else if(Math.abs(d-distance)<1e-6)contacts.push(p);
+    }
+    return {distance:-distance,x:contacts.reduce((sum,p)=>sum+p.x,0)/contacts.length,y:contacts.reduce((sum,p)=>sum+p.y,0)/contacts.length};
+  }
+  function segmentHitsBody(a,b,points) {
+    if(pointInPolygon(a.x,a.y,points)||pointInPolygon(b.x,b.y,points))return true;
+    const dx=b.x-a.x,dy=b.y-a.y;
+    for(let i=0;i<points.length;i++) {
+      const p=points[i],q=points[(i+1)%points.length],ex=q.x-p.x,ey=q.y-p.y,den=dx*ey-dy*ex;
+      if(Math.abs(den)<1e-9)continue;
+      const px=p.x-a.x,py=p.y-a.y,t=(px*ey-py*ex)/den,u=(px*dy-py*dx)/den;
+      if(t>=0&&t<=1&&u>=0&&u<=1)return true;
+    }
+    return false;
+  }
+  function resolve(nx,ny,depth,point,bounce=.45,friction=.16,wall=false) {
+    const inertia=bodyInertia(body);
+    if(depth<=0)return false;
+    const rx=point.x-body.x,ry=point.y-body.y;
+    const normalSpeed=(body.vx-body.omega*ry)*nx+(body.vy+body.omega*rx)*ny;
+    if(normalSpeed<0) {
+      const lever=rx*ny-ry*nx,e=normalSpeed < -28?bounce:0;
+      const impulse=-(1+e)*normalSpeed/(1+lever*lever/inertia);
+      body.vx+=impulse*nx;body.vy+=impulse*ny;body.omega+=lever*impulse/inertia;
+      const tx=-ny,ty=nx,tangent=(body.vx-body.omega*ry)*tx+(body.vy+body.omega*rx)*ty;
+      const tangentLever=rx*ty-ry*tx,j=clamp(-tangent/(1+tangentLever*tangentLever/inertia),-friction*impulse,friction*impulse);
+      body.vx+=j*tx;body.vy+=j*ty;body.omega+=(rx*ty-ry*tx)*j/inertia;
+      const closing=(body.vx-body.omega*ry)*nx+(body.vy+body.omega*rx)*ny;
+      if(closing<0) {
+        const correction=-closing/(1+lever*lever/inertia);
+        body.vx+=correction*nx;body.vy+=correction*ny;body.omega+=lever*correction/inertia;
+      }
+      if(wall&&normalSpeed < -55&&impacts.length<12)impacts.push({x:point.x,y:point.y,nx,ny,life:.32,strength:Math.min(1,-normalSpeed/220)});
+    }
+    const lever=rx*ny-ry*nx,correction=(depth+.01)/(1+lever*lever/inertia);
+    body.angle+=clamp(lever*correction/inertia,-.12,.12);
+    const remaining=Math.max(0,depth+support(nx,ny).distance-point.distance+.01);
+    body.x+=nx*remaining;body.y+=ny*remaining;
+    return true;
+  }
+  function collidePolygon(points,bounce=.3,friction=.22) {
+    const shape=bodyPoints();let near=null,crossed=null;
+    for(let i=0,j=points.length-1;i<points.length;j=i++) {
+      const a=points[j],b=points[i],dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
+      if(!len)continue;
+      const t=clamp(((body.x-a.x)*dx+(body.y-a.y)*dy)/len,0,1),x=a.x+dx*t,y=a.y+dy*t,d=Math.hypot(body.x-x,body.y-y);
+      const candidate={d,x,y,dx,dy};
+      if(!near||d<near.d)near=candidate;
+      if(d<BR+.02&&segmentHitsBody(a,b,shape)&&(!crossed||d<crossed.d))crossed=candidate;
+    }
+    const inside=pointInPolygon(body.x,body.y,points);
+    if(!crossed&&!inside)return false;
+    const p=crossed||near;if(!p)return false;
+    let nx,ny;
+    if(p.d>1e-7){const sign=inside?-1:1;nx=(body.x-p.x)/p.d*sign;ny=(body.y-p.y)/p.d*sign;}
+    else {
+      let area=0;for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a.x*b.y-a.y*b.x;}
+      const len=Math.hypot(p.dx,p.dy),sign=area>0?1:-1;nx=p.dy/len*sign;ny=-p.dx/len*sign;
+    }
+    const point=support(nx,ny,shape);
+    return resolve(nx,ny,point.distance+(inside?p.d:-p.d),point,bounce,friction);
+  }
+  function collideRect(rect) {
+    return collidePolygon([{x:rect.x,y:rect.y},{x:rect.x+rect.w,y:rect.y},
+      {x:rect.x+rect.w,y:rect.y+rect.h},{x:rect.x,y:rect.y+rect.h}],.3,.22);
+  }
+  function collideWall(a,b,side=1) {
+    const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);if(!len)return false;
+    const t=clamp(((body.x-a.x)*dx+(body.y-a.y)*dy)/(len*len),0,1),px=a.x+dx*t,py=a.y+dy*t;
+    if(Math.hypot(body.x-px,body.y-py)>BR+.02)return false;
+    const points=bodyPoints(),nx=(side===0?dy:-dy)/len,ny=(side===0?-dx:dx)/len;
+    const signed=(body.x-px)*nx+(body.y-py)*ny;
+    if(signed>0&&!segmentHitsBody(a,b,points))return false;
+    const point=support(nx,ny,points);
+    return resolve(nx,ny,point.distance-signed,point,.58,.12,true);
+  }
+  function collide() {
+    let hit=false;
+    for(let pass=0;pass<5;pass++) {
+      for(let side=0;side<2;side++) {
+        const wall=walls[side],from=Math.max(0,Math.floor((body.y-40-BR*2)/5)),to=Math.min(wall.length-1,Math.ceil((body.y-40+BR*2)/5));
+        for(let i=from;i<to;i++) {
+          if(side===1&&wall[i].y>=2960&&wall[i+1].y<=3290)continue;
+          if(collideWall(wall[i],wall[i+1],side))hit=true;
+        }
+      }
+      for(let i=1;i<branchEdge.length;i++) {
+        const a=branchEdge[i-1],b=branchEdge[i];
+        if(body.y>=Math.min(a.y,b.y)-BR&&body.y<=Math.max(a.y,b.y)+BR&&collideWall(a,b))hit=true;
+      }
+      for(const structure of structures)if(body.y>structure.top-BR&&body.y<structure.bottom+BR) {
+        if(collidePolygon(structure.points,.35,.2))hit=true;
+      }
+      for(const o of obstacles)if(Math.abs(body.y-o.y)<BR+(o.kind==='neck'?250:110)) {
+        if(o.kind==='shelf') {
+          const shapes=o.material==='fishbone'?fishbonePieces(o):(o.material==='turbinate'?['left','right']:['left']).map(lane=>shelfShape(o,lane));
+          for(const shape of shapes)if(collidePolygon(shape,o.material==='fishbone'?.42:.38,o.material==='fishbone'?.25:.22)) {hit=true;if(o.material==='fishbone')prick();}
+        }else if(o.kind==='neck') {for(const shape of neckShapes(o))if(collidePolygon(shape,.28,.45))hit=true;}
+        else if(o.kind==='gate') {for(const shape of vocalShapes(o))if(collidePolygon(shape,.25,.2))hit=true;}
+        else for(const rect of blocks(o))if(collideRect(rect))hit=true;
+      }
+    }
+    const bottom=support(0,-1);
+    if(body.y+bottom.distance>H-100){resolve(0,-1,body.y+bottom.distance-(H-100),bottom,.3,.2,true);hit=true;if(elapsed>3)fail('fell');}
+    if(inEsophagus(body.x,body.y)&&body.y>3540&&body.x>bounds(body.y)[1]+30)fail('esophagus');
+    if(hit){if(contact<=0){collisions++;bumpFlash=.22;}contact=.12;}
+  }
+  function channel(x,y) {
+    let [l,r]=bounds(y);
+    if(y>5990) {
+      const [a,b]=lungSplit(y),mix=clamp((y-5990)/100,0,1);
+      if(x<center(y))r+=(a-r)*mix;else l+=(b-l)*mix;
+    }
+    if(y>110&&y<1660) {
+      const [a,b]=nasalSplit(y),mix=Math.min(clamp((y-110)/110,0,1),clamp((1660-y)/110,0,1));
+      if(x<center(y))r+=(a-r)*mix;else l+=(b-l)*mix;
+    }
+    for(const o of obstacles) {
+      const d=y-o.y;if(Math.abs(d)>330)continue;
+      let a,b;
+      if(o.material==='turbinate') {
+        const lane=x<center(o.y)?'left':'right',[nl,nr]=laneBounds(o.y,lane),side=lane==='right'?(o.side==='left'?'right':'left'):o.side;
+        [a,b]=side==='left'?[nr-o.gap,nr]:[nl,nl+o.gap];
+      }else [a,b]=openings(o);
+      const mix=Math.exp(-Math.pow(d/145,2))*.91;
+      l+=(a-l)*mix;r+=(b-r)*mix;
+    }
+    return [l,r];
+  }
+  function stream(x,y,t=elapsed) {
+    const [l,r]=channel(x,y),width=Math.max(35,r-l),u=(x-l)/width;
+    const organ=regions[regionIndex(y)],drive=organ.speed*200;
+    let psi=drive*(u-.12*Math.sin(u*Math.PI*2)/Math.PI/2);
+    for(const o of obstacles) {
+      if(Math.abs(y-o.y)>310)continue;
+      const [bl,br]=bounds(o.y),side=o.side==='right'?-1:1;
+      const cx=center(o.y)-side*(br-bl)*.22,cy=o.y+100,rad=90;
+      const gaussian=Math.exp(-((x-cx)**2+(y-cy)**2)/(rad*rad));
+      psi+=side*7200*gaussian*Math.sin(Math.PI*clamp(u,0,1))**2*(.8+.2*Math.sin(t*1.7+o.y));
+    }
+    const lungRight=bounds(6540)[1],cx=(lungSplit(6540)[1]+lungRight)/2,cy=6540;
+    psi+=65000*Math.exp(-((x-cx)**2+(y-cy)**2)/110**2)*Math.sin(Math.PI*clamp(u,0,1))**2;
+    return psi;
+  }
+  function velocityAt(x,y,t=elapsed,pressure=flow) {
+    if(duoMode)return duoVelocity(x,y,t,pressure);
+    if(x>bounds(y)[1]&&inEsophagus(x,y))return {x:0,y:0};
+    const h=3,vx=(stream(x,y+h,t)-stream(x,y-h,t))/(2*h),vy=-(stream(x+h,y,t)-stream(x-h,y,t))/(2*h);
+    const limiter=Math.min(1,430/Math.max(1,Math.hypot(vx,vy))),pulse=1+.045*Math.sin(t*8);
+    return {x:vx*limiter*pressure*pulse,y:vy*limiter*pressure*pulse};
+  }
+  function pointInPolygon(x,y,points) {
+    let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++) {
+      const a=points[j],b=points[i];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)inside=!inside;
+    }return inside;
+  }
+  function inSolid(x,y) {
+    if(duoMode)return x<100||x>540||y>900||duoShapes.some(o=>pointInPolygon(x,y,o.points));
+    if(!inAirway(x,y)||y>6900)return true;
+    for(const s of structures)if(y>=s.top&&y<=s.bottom&&pointInPolygon(x,y,s.points))return true;
+    for(const o of obstacles)if(Math.abs(y-o.y)<(o.kind==='neck'?250:110)) {
+      if(o.kind==='shelf') {
+        const shapes=o.material==='fishbone'?fishbonePieces(o):(o.material==='turbinate'?['left','right']:['left']).map(lane=>shelfShape(o,lane));
+        if(shapes.some(shape=>pointInPolygon(x,y,shape)))return true;
+      }else if(o.kind==='neck') {if(neckShapes(o).some(shape=>pointInPolygon(x,y,shape)))return true;}
+      else if(o.kind==='gate') {if(vocalShapes(o).some(shape=>pointInPolygon(x,y,shape)))return true;}
+      else if(blocks(o).some(b=>x>b.x&&x<b.x+b.w&&y>b.y&&y<b.y+b.h))return true;
+    }return false;
+  }
+  function newParticle() {
+    let x,y;for(let i=0;i<20;i++){y=camera+Math.random()*viewHeight;const [l,r]=duoMode?[100,540]:bounds(y);x=l+8+Math.random()*(r-l-16);if(!inSolid(x,y))break;}
+    return {x,y,trail:[],alpha:.25+Math.random()*.4};
+  }
+  function moveParticles(dt) {
+    for(let i=0;i<particles.length;i++) {
+      let p=particles[i];const v=velocityAt(p.x,p.y,elapsed,running&&!won&&!failed?flow:.04);
+      const dx=v.x*dt,dy=v.y*dt,x=p.x+dx,y=p.y+dy;
+      const steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/2));
+      let blocked=false;
+      for(let j=1;j<=steps;j++)if(inSolid(p.x+dx*j/steps,p.y+dy*j/steps)){blocked=true;break;}
+      if(y<camera-30||y>camera+viewHeight+30||blocked){particles[i]=newParticle();continue;}
+      p.trail.push({x:p.x,y:p.y});if(p.trail.length>24)p.trail.shift();p.x=x;p.y=y;
+    }
+  }
+  function step(dt) {
+    if(!running||won||failed)return;
+    elapsed+=dt;for(const impact of impacts)impact.life-=dt;impacts=impacts.filter(p=>p.life>0);contact=Math.max(0,contact-dt);bumpFlash=Math.max(0,bumpFlash-dt);hurtCooldown=Math.max(0,hurtCooldown-dt);hurtFlash=Math.max(0,hurtFlash-dt);
+    const target=breathe(dt),exhaling=blowing();
+    if(exhaling&&!wasBlowing)for(const valve of obstacles)if(valve.kind==='valve'&&Math.abs(body.y-valve.y)<300) {
+      valve.openUntil=inhaleTime>=valve.window[0]&&inhaleTime<=valve.window[1]?elapsed+2.3:0;
+    }
+    inhaleTime=inhaling()?inhaleTime+dt:0;wasBlowing=exhaling;
+    flow+=(target-flow)*Math.min(1,dt*5);
+    if(duoMode){stepDuo(dt);return;}
+    if(body.y>1650)nasalLane=body.x<center(1650)?'left':'right';
+    const wind=velocityAt(body.x,body.y);
+    body.vx+=(wind.x-body.vx)*2.7*dt;
+    const swallowed=inEsophagus(body.x,body.y)&&body.x>bounds(body.y)[1]+18;
+    body.vy+=((wind.y-body.vy)*2.7+42+(swallowed?150:0))*dt;
+    body.omega*=Math.exp(-.65*dt);body.angle+=body.omega*dt;
+    body.x+=body.vx*dt;body.y+=body.vy*dt;collide();
+    for(const o of obstacles)if(body.y<o.y-(o.kind==='neck'?145:80))cleared.add(o.id);
+    viewHeight+=([1480,960,1180,1380][regionIndex(body.y)]-viewHeight)*Math.min(1,dt*3);
+    camera+=(clamp(body.y-viewHeight*.62,0,H-viewHeight)-camera)*Math.min(1,dt*5);
+    if(body.y<(practiceMode?neck.y-145:EXIT)&&!failed)finish();
+  }
+  function hint() {
+    if(duoMode)return duoHint();
+    if(failed)return failureReason==='irritation'?'三次刺碰，挑戰失敗。重新找一條流線。':failureReason==='esophagus'?'進了食道。下一次沿有流線的氣道前進。':'異物掉回肺底。重新抓住吐氣節奏。';
+    if(won)return practiceMode?'窄口突破！吸氣可以改變位置，也能幫你脫困。':'從肺部，到鼻腔。這一口是自由。';
+    if(!running)return practiceMode?'先吐氣接近窄口。卡住後吸氣退回寬腔，碰到斜坡再吐氣。':'從左側肺泡腔出發，沿支氣管向上匯流。';
+    if(breathPhase==='gasp')return '氣量耗盡，必須吸完這一大口。吸氣會把異物往肺部帶。';
+    if(inEsophagus(body.x,body.y)&&body.x>bounds(body.y)[1]+18)return '滑進食道了！這裡沒有氣流，正被吞嚥收縮帶往下。';
+    if(body.y>2970&&body.y<3120)return '咽喉岔口：右側食道往下，沿有流線的氣道往上。';
+    const o=upcoming();
+    if(o&&body.y<o.y+480) {
+      if(o.kind==='neck')return body.y>o.y+95?'寬腔裡可以換角：吐氣試著通過窄口。':bodyWidth()>o.gap?'橫卡住了！放開吸氣，退到下方寬腔，借軟骨斜坡翻轉。':'轉到窄的一面了，短吐氣穿過！';
+      if(o.kind==='gate')return gateGap()<bodyWidth()+6?'聲門較窄：等張開，或轉到窄的一面。':'聲帶張開了：吐氣穿過窄口！';
+      if(o.kind==='valve') {
+        if(elapsed<o.openUntil&&blowing())return `${o.name}張開了，繼續吐氣穿過！`;
+        if(inhaling()&&inhaleTime>=o.window[0]&&inhaleTime<=o.window[1])return '縫隙變綠了！現在吐氣，趁它還沒閉合。';
+        if(inhaling()&&inhaleTime>o.window[1])return '吸過頭，又閉合了。吐一下，再重新抓時機。';
+        return o.id==='membrane'?'薄膜堵住了：輕吸一下，縫隙變綠就吐氣。':'這裡要吸久一點：等縫隙變綠再吐氣。';
+      }
+      if(o.material==='fishbone')return '魚刺不能碰！短吐氣穿行，短吸氣減速，看清流線再前進。';
+      return `${o.name}：控制吐氣強弱，沿流線穿過缺口。`;
+    }
+    return air<.2&&blowing()?'氣快用完了。先找寬敞處補氣，避免強制深吸。':['擦過腔壁會翻轉，用呼吸節奏改變碰撞。','氣管內氣流較快，轉到窄的一面再穿過聲門。','寬腔裡的軟瓣需要換氣繞過。','鼻中隔分出兩條路，鼻甲讓通路曲折。'][regionIndex(body.y)];
+  }
+  function updateUI() {
+    const start=practiceMode?neck.y+100:START,exit=practiceMode?neck.y-145:EXIT;
+    const progress=won?100:Math.round(clamp((start-body.y)/(start-exit),0,.99)*100),live=running&&!won&&!failed,active=live&&blowing(),forced=live&&breathPhase==='gasp';
+    $('subtitle').textContent=duoMode?'同一口氣，兩個異物':practiceMode?'吸氣練習':'一口自由';$('progress-label').textContent=duoMode?'已排出異物':practiceMode?'窄口突破':'距離自由';$('reset').textContent=practiceMode||duoMode?'← 完整關卡':'↻ 重新開始';
+    $('progress').textContent=duoMode?`${bodies.filter(b=>b.escaped).length} / 2`:progress;
+    $('progress').nextElementSibling.hidden=duoMode;$('progress-fill').style.width=(duoMode?bodies.filter(b=>b.escaped).length*50:progress)+'%';
+    document.querySelector('.intro').innerHTML=duoMode?'黃大、粉小，共用一口呼吸。<br>先分流，再匯流；兩個都要排出。':'從肺部，一路到鼻腔。<br>每個阻礙，都需要不同的一口氣。';
+    canvas.setAttribute('aria-label',duoMode?'雙異物關卡：按住吐氣、放開吸氣，同時引導黄色和粉紅異物到出口。':'按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。');
+    $('irritation').textContent=irritation;$('irritation-fill').style.width=irritation+'%';
+    $('air').textContent=Math.ceil(air*100);$('air-fill').style.width=air*100+'%';
+    $('breath').classList.toggle('active',active);$('breath').classList.toggle('forced',forced);
+    $('breath').setAttribute('aria-label',forced?'正在強制深吸氣，這一口無法打斷':'按住吐氣，放開吸氣');
+    $('button-label').textContent=won||failed?'↑ 再玩一次':forced?'↓ 強制深吸氣':active?'↑ 吐氣中':'↑ 按住吐氣';
+    $('button-note').textContent=forced?'這一口無法打斷 · 吸滿後恢復控制':'放開慢吸氣 · 耗盡會強制深吸';
+    const status=failed?'挑戰失敗 · 再試一次':won?(duoMode?'兩個異物都自由了！':practiceMode?'窄口突破！':'異物排出了！'):!running?(duoMode?'準備好，一口氣影響兩個異物。':practiceMode?'準備好，試著通過窄口。':'準備好，從肺部出發。'):forced?'氣量耗盡 · 正在深吸氣':active?(air<.1?'氣快用完了…':'吐氣 · 推動流場'):breathPhase==='rest-exhale'?'自然吐氣 · 輕柔呼吸':breathTime<INHALE_SECONDS*.25?'吸氣 · 慢慢吸入':breathTime>INHALE_SECONDS*.75?'吸氣 · 逐漸放緩':'吸氣 · 補氣中';
+    if($('state').textContent!==status)$('state').textContent=status;
+    document.querySelector('.breath-state').style.color=active?'var(--pink)':'var(--aqua)';
+    $('hint').textContent=hint();$('stage-hint').textContent=hint();
+    const region=regionIndex(body.y),food=inEsophagus(body.x,body.y)&&body.x>bounds(body.y)[1]+18;
+    $('area').textContent=duoMode?'雙異物 / 分流 → 窄口 → 鼻腔':practiceMode?'練習 / 喉頭窄口 · 吸氣脫困':food?'支路 / 食道 · ESOPHAGUS':`0${region+1} / ${regions[region].name} · ${regions[region].en}`;
+    $('organ-feel').textContent=duoMode?'黃：大且重 · 粉：小且輕 · 都會碰撞':practiceMode?'窄口 · 寬腔 · 軟骨斜坡':food?'縱向皺褶 · 吞嚥收縮 · 通往胃':regions[region].feel;
+    document.querySelectorAll('.route span').forEach((el,i)=>{el.classList.toggle('current',!food&&i===region);el.classList.toggle('passed',i<region);});
+    $('time').textContent=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(Math.floor(elapsed%60)).padStart(2,'0')}`;
+  }
+  function resize() {
+    const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+    canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);
+    scale=Math.min(rect.width/W,rect.height/viewHeight)*dpr;ox=(canvas.width-W*scale)/2;oy=(canvas.height-viewHeight*scale)/2;
+  }
+  function pathWall(side,connect=false) {
+    const points=side===1?rightOutline:walls[0];
+    if(connect)ctx.lineTo(points[0].x,points[0].y);else ctx.moveTo(points[0].x,points[0].y);
+    for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+    return {first:points[0],last:points.at(-1)};
+  }
+  function airwayPath() {
+    pathWall(0);for(let i=rightOutline.length-1;i>=0;i--)ctx.lineTo(rightOutline[i].x,rightOutline[i].y);ctx.closePath();
+  }
+  function stickerShape(points,color,width=6) {
+    ctx.beginPath();polygonPath(points);ctx.lineJoin='round';
+    ctx.strokeStyle=art.ink;ctx.lineWidth=width+5;ctx.stroke();
+    ctx.strokeStyle=art.paper;ctx.lineWidth=width;ctx.stroke();
+    ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=art.ink;ctx.lineWidth=1.5;ctx.stroke();
+  }
+  function inkText(text,x,y,color=art.paper) {
+    ctx.lineJoin='round';ctx.strokeStyle=art.ink;ctx.lineWidth=4;ctx.strokeText(text,x,y);ctx.fillStyle=color;ctx.fillText(text,x,y);
+  }
+  function stickerTag(text,x,y,color=art.paper) {
+    ctx.font='900 15px system-ui';ctx.textAlign='center';
+    const width=Math.min(330,ctx.measureText(text).width+24);
+    ctx.beginPath();ctx.roundRect(x-width/2,y-19,width,29,10);
+    ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=art.ink;ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle=art.ink;ctx.fillText(text,x,y,306);
+  }
+  function drawEsophagus() {
+    if(camera>esophagus.bottom||camera+viewHeight<esophagus.top)return;
+    ctx.save();ctx.beginPath();polygonPath(esophagus.points);ctx.clip();
+    ctx.fillStyle='#59228f';ctx.fillRect(535,2960,110,1130);
+    for(let x=558;x<=612;x+=13) {
+      ctx.beginPath();ctx.moveTo(x,3300);
+      for(let y=3310;y<4080;y+=10)ctx.lineTo(x+Math.sin(y*.016+x)*5,y);
+      ctx.strokeStyle='#d95dcb';ctx.lineWidth=4;ctx.stroke();
+    }
+    for(let y=3380;y<4070;y+=110) {
+      const squeeze=6+5*Math.sin(elapsed*2-y*.02);
+      ctx.beginPath();ctx.moveTo(548,y-8);ctx.quadraticCurveTo(584,y+squeeze,623,y-8);
+      ctx.strokeStyle=art.ink;ctx.lineWidth=8;ctx.stroke();ctx.strokeStyle='#ffbbee';ctx.lineWidth=4;ctx.stroke();
+    }
+    ctx.restore();
+    ctx.font='900 15px system-ui';ctx.textAlign='center';inkText('食道入口 ↘',568,3095,art.yellow);
+    ctx.save();ctx.translate(585,3600);ctx.rotate(Math.PI/2);ctx.font='900 14px system-ui';inkText('食 道  →  通 往 胃',0,0);ctx.restore();
+    ctx.font='900 12px system-ui';inkText('↓ 吞嚥收縮',585,3860,art.yellow);
+  }
+  function drawVocal(o) {
+    for(const [i,shape] of vocalShapes(o).entries()) {
+      stickerShape(shape,'#ff84cb',7);
+      const dir=i===0?1:-1,root=shape[0].x,inner=shape[3].x;
+      for(let j=-2;j<=2;j++) {
+        ctx.beginPath();ctx.moveTo(root,o.y+j*24);ctx.quadraticCurveTo((root+inner)/2,o.y+j*18,inner-dir*6,o.y+j*6);
+        ctx.strokeStyle='#c639a5';ctx.lineWidth=4;ctx.stroke();
+      }
+      ctx.beginPath();ctx.moveTo(shape[2].x,shape[2].y);ctx.lineTo(shape[3].x,shape[3].y);ctx.lineTo(shape[4].x,shape[4].y);ctx.lineTo(shape[5].x,shape[5].y);
+      ctx.strokeStyle=art.ink;ctx.lineWidth=10;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=6;ctx.stroke();
+    }
+  }
+  function drawStructures() {
+    for(const structure of structures)if(structure.top<camera+viewHeight&&structure.bottom>camera) {
+      const nasal=structure.id==='nasal-septum';
+      stickerShape(structure.points,nasal?'#ff994c':'#f84d9c',7);
+      if(nasal) {
+        ctx.beginPath();for(let y=Math.max(150,camera);y<Math.min(1620,camera+viewHeight);y+=10){const x=center(y);y===Math.max(150,camera)?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+        ctx.strokeStyle='#ffe891';ctx.lineWidth=9;ctx.stroke();
+        const y=clamp(camera+viewHeight*.4,360,1400);ctx.save();ctx.translate(center(y),y);ctx.rotate(-Math.PI/2);ctx.font='900 13px system-ui';ctx.textAlign='center';inkText('鼻 中 隔',0,4);ctx.restore();
+      } else {
+        for(let y=Math.max(6110,Math.ceil(camera/80)*80);y<Math.min(structure.bottom-30,camera+viewHeight);y+=80){
+          const x=center(y);ctx.beginPath();ctx.moveTo(x,y+35);ctx.bezierCurveTo(x-6,y+15,x-25,y+9,x-39,y-9);ctx.moveTo(x,y+35);ctx.bezierCurveTo(x+6,y+15,x+25,y+9,x+39,y-9);ctx.strokeStyle='#b72b95';ctx.lineWidth=5;ctx.stroke();
+        }
+        if(6040>camera&&6040<camera+viewHeight)stickerTag('支氣管分岔 · 兩側匯流',center(6040),6040,'#ffcde4');
+      }
+    }
+  }
+  function drawOrganTextures() {
+    const top=camera,bottom=camera+viewHeight;
+    const vocal=obstacles.find(o=>o.kind==='gate');
+    if(top<vocal.y+170&&bottom>vocal.y-170) {
+      const [l,r]=bounds(vocal.y);
+      for(const [x,dir] of [[l,-1],[r,1]]) {
+        ctx.beginPath();ctx.moveTo(x,vocal.y-145);ctx.bezierCurveTo(x+dir*72,vocal.y-100,x+dir*73,vocal.y+85,x,vocal.y+145);
+        ctx.strokeStyle=art.ink;ctx.lineWidth=29;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=21;ctx.stroke();
+        ctx.strokeStyle='#af83ff';ctx.lineWidth=14;ctx.stroke();
+      }
+    }
+    for(let y=Math.max(6090,Math.ceil(top/100)*100);y<Math.min(6920,bottom+50);y+=100) {
+      const [l,r]=bounds(y);
+      for(const side of [-1,1]) {
+        const edge=side<0?l:r,x=edge+side*38;
+        ctx.beginPath();ctx.moveTo(edge,y);ctx.quadraticCurveTo(x,y+12,x+side*15,y-5);ctx.strokeStyle='#b92c87';ctx.lineWidth=5;ctx.stroke();
+        for(let i=0;i<6;i++) {
+          const a=i/6*Math.PI*2,cx=x+Math.cos(a)*17,cy=y+Math.sin(a)*19,radius=13+(i%2)*4;
+          ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.fillStyle=['#ffa6cd','#f55fac','#ffcfdd'][i%3];ctx.fill();ctx.strokeStyle='#9e287e';ctx.lineWidth=3;ctx.stroke();
+          ctx.beginPath();ctx.ellipse(cx-4,cy-5,4,2,-.6,0,Math.PI*2);ctx.fillStyle=art.paper;ctx.fill();
+        }
+      }
+    }
+    for(let y=Math.max(3390,Math.ceil(top/105)*105);y<Math.min(5350,bottom+40);y+=105) {
+      const [l,r]=bounds(y);
+      for(const [x,dir] of [[l,-1],[r,1]]) {
+        ctx.beginPath();ctx.moveTo(x-4*dir,y-27);ctx.bezierCurveTo(x+dir*42,y-28,x+dir*42,y+28,x-4*dir,y+27);
+        ctx.strokeStyle=art.ink;ctx.lineWidth=22;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=16;ctx.stroke();
+        ctx.strokeStyle='#92fff0';ctx.lineWidth=10;ctx.stroke();
+      }
+      ctx.beginPath();ctx.moveTo(l+13,y);ctx.quadraticCurveTo(center(y),y+11,r-13,y);ctx.strokeStyle='#9360e655';ctx.lineWidth=5;ctx.stroke();
+    }
+    for(let y=Math.max(1770,Math.ceil(top/160)*160);y<Math.min(3280,bottom+60);y+=160) {
+      const [l,r]=bounds(y);
+      for(const [x,dir] of [[l,-1],[r,1]]) {
+        ctx.beginPath();ctx.moveTo(x+dir*17,y-53);ctx.bezierCurveTo(x+dir*63,y-22,x+dir*70,y+24,x+dir*18,y+58);
+        ctx.strokeStyle='#b52caa';ctx.lineWidth=15;ctx.stroke();ctx.strokeStyle='#ffb8e5';ctx.lineWidth=5;ctx.stroke();
+      }
+    }
+    for(let y=Math.max(200,Math.ceil(top/20)*20);y<Math.min(1640,bottom);y+=20) {
+      const [l,r]=bounds(y),[a,b]=nasalSplit(y);
+      for(const [x,dir] of [[l,1],[a,-1],[b,1],[r,-1]]) {
+        ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+dir*8,y-3,x+dir*10,y-9);ctx.strokeStyle='#da682d';ctx.lineWidth=2.5;ctx.stroke();
+      }
+    }
+  }
+  function drawShelf(o,lane) {
+    if(o.material==='fishbone') {
+      for(const piece of fishbonePieces(o))stickerShape(piece,art.paper,3);
+      const tip=shelfShape(o)[2];ctx.beginPath();ctx.arc(tip.x,tip.y,4,0,Math.PI*2);ctx.fillStyle='#ff4c77';ctx.fill();
+      for(const piece of fishbonePieces(o).slice(1)) {const p=piece[1];ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2);ctx.fillStyle='#ff4c77';ctx.fill();}
+      return;
+    }
+    const points=shelfShape(o,lane),nasal=o.material==='turbinate';
+    if(nasal) {
+      const tip=points[4],dir=lane==='right'?-1:1,root=points[0];
+      stickerShape(points,'#fe76b6',7);
+      ctx.beginPath();ctx.moveTo(root.x,o.y-35);ctx.bezierCurveTo(tip.x-dir*30,o.y-72,tip.x-dir*6,o.y-24,tip.x-dir*15,o.y+24);
+      ctx.bezierCurveTo(tip.x-dir*29,o.y+48,tip.x-dir*60,o.y+22,tip.x-dir*35,o.y+18);
+      ctx.strokeStyle=art.ink;ctx.lineWidth=11;ctx.stroke();ctx.strokeStyle='#fff0a5';ctx.lineWidth=6;ctx.stroke();
+      for(let i=1;i<5;i++) {
+        const x=root.x+(tip.x-root.x)*i/6;
+        ctx.beginPath();ctx.moveTo(x,o.y-42);ctx.lineTo(x+dir*11,o.y-21);ctx.strokeStyle='#ce2a86';ctx.lineWidth=4;ctx.stroke();
+      }
+      return;
+    }
+    const color={mucus:'#baf264',cartilage:'#82ecec',soft:'#baf264'}[o.material]||art.pink;
+    stickerShape(points,color,6);
+    const root=points[0],tip=points[3];
+    ctx.beginPath();ctx.moveTo(root.x,o.y);ctx.quadraticCurveTo((root.x+tip.x)/2,o.y-18,tip.x,o.y);ctx.strokeStyle='#70ad49';ctx.lineWidth=5;ctx.stroke();
+    if(o.material==='soft')for(let i=1;i<5;i++){const t=i/5,x=root.x+(tip.x-root.x)*t;ctx.beginPath();ctx.moveTo(x,o.y-6);ctx.lineTo(x+12,o.y+18);ctx.strokeStyle='#70ad49';ctx.lineWidth=3;ctx.stroke();}
+  }
+  function draw(dt) {
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.setTransform(scale,0,0,scale,ox,oy-camera*scale);ctx.lineCap='round';ctx.lineJoin='round';
+    if(duoMode){drawDuo(dt);return;}
+    ctx.fillStyle='#8b56d335';
+    for(let y=Math.floor(camera/42)*42;y<camera+viewHeight;y+=42)for(let x=15;x<W;x+=42){ctx.beginPath();ctx.arc(x,y,2.3,0,Math.PI*2);ctx.fill();}
+    const tissue=ctx.createLinearGradient(0,camera,0,camera+viewHeight);
+    for(let i=0;i<=20;i++)tissue.addColorStop(i/20,regions[regionIndex(camera+viewHeight*i/20)].color);
+    for(let side=0;side<2;side++) {
+      const edge=side===0?-150:W+150;
+      ctx.save();ctx.beginPath();ctx.moveTo(edge,camera-45);const p=pathWall(side,true);ctx.lineTo(edge,p.last.y);ctx.closePath();ctx.fillStyle=tissue;ctx.fill();ctx.clip();
+      ctx.beginPath();pathWall(side);ctx.strokeStyle='#89299455';ctx.lineWidth=46;ctx.stroke();ctx.restore();
+      ctx.beginPath();pathWall(side);ctx.strokeStyle=art.ink;ctx.lineWidth=17;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=6;ctx.stroke();
+    }
+    if(camera+viewHeight>6900) {
+      ctx.fillStyle=regions[0].color;ctx.fillRect(-150,6900,W+300,120);
+      ctx.beginPath();const [l,r]=bounds(6900);ctx.moveTo(l,6900);ctx.lineTo(r,6900);ctx.strokeStyle=art.ink;ctx.lineWidth=14;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=5;ctx.stroke();
+    }
+    drawStructures();drawOrganTextures();drawEsophagus();
+    for(const impact of impacts) {
+      const age=1-impact.life/.32;
+      ctx.save();ctx.translate(impact.x,impact.y);ctx.rotate(Math.atan2(impact.nx,-impact.ny));ctx.globalAlpha=impact.life/.32;
+      for(let i=0;i<7;i++) {const a=i*Math.PI*2/7,r=9+age*32;ctx.beginPath();ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);ctx.lineTo(Math.cos(a)*(r+8),Math.sin(a)*(r+8));ctx.strokeStyle=art.yellow;ctx.lineWidth=4;ctx.stroke();}
+      ctx.restore();
+    }
+    ctx.save();ctx.beginPath();airwayPath();for(const structure of structures)polygonPath(structure.points);ctx.clip('evenodd');
+    for(const o of obstacles)if(o.y>camera-250&&o.y<camera+viewHeight+250) {
+      if(o.kind==='shelf')for(const lane of o.material==='turbinate'?['left','right']:['left'])drawShelf(o,lane);
+      else if(o.kind==='neck')for(const [i,shape] of neckShapes(o).entries())stickerShape(shape,i===2?'#92fff0':'#af83ff',7);
+      else if(o.kind==='gate')drawVocal(o);
+      else for(const b of blocks(o)) {
+        ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,16);ctx.fillStyle='#c087ff';ctx.fill();ctx.strokeStyle=art.ink;ctx.lineWidth=10;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=4;ctx.stroke();
+      }
+    }
+    moveParticles(dt);
+    for(const p of particles) {
+      if(p.trail.length<2)continue;
+      ctx.beginPath();ctx.moveTo(p.trail[0].x,p.trail[0].y);for(const point of p.trail)ctx.lineTo(point.x,point.y);ctx.lineTo(p.x,p.y);
+      ctx.strokeStyle=flow>.1?`rgba(255,228,75,${p.alpha+.15})`:`rgba(107,255,247,${p.alpha+.15})`;ctx.lineWidth=3;ctx.stroke();
+      ctx.beginPath();ctx.arc(p.x,p.y,1.8,0,Math.PI*2);ctx.fillStyle=art.paper;ctx.fill();
+    }
+    ctx.restore();
+    for(const o of obstacles)if(o.y>camera+40&&o.y<camera+viewHeight-80) {
+      const [a,b]=openings(o);
+      stickerTag(o.name,o.material==='turbinate'?(a+b)/2:center(o.y),o.y-110,o.material==='fishbone'?'#ffd4e3':art.paper);
+      ctx.font='900 13px system-ui';ctx.textAlign='center';
+      if(o.kind==='shelf')inkText(o.material==='fishbone'?'⚠ 魚刺不可碰':'沿氣流繞行',(a+b)/2,o.y+78,o.material==='fishbone'?'#ff9dc1':art.cyan);
+      else if(o.kind==='neck') {
+        inkText('↑ 窄面通過',center(o.y)-12,o.y-65,art.yellow);
+        inkText('↓ 吸氣退回寬腔',center(o.y)-35,o.y+124,art.cyan);
+        inkText('軟骨斜坡 · 碰撞換角',center(o.y)+30,o.y+218,art.paper);
+      }
+      else if(o.kind==='gate')inkText(gateGap()>bodyWidth()+6?'聲門張開 · 穿過':'聲門較窄 · 等待／轉向',center(o.y),o.y+115,art.yellow);
+      else {
+        const open=valveGap(o)>70;
+        inkText(open?'張開！吐氣穿過':o.id==='membrane'?'輕吸 → 張開 → 吐氣':'慢吸 → 張開 → 吐氣',center(o.y),o.y+70,open?art.yellow:art.paper);
+        const bx=center(o.y)-70,by=o.y+93;
+        ctx.fillStyle=art.ink;ctx.fillRect(bx,by,140,7);ctx.strokeStyle=art.paper;ctx.lineWidth=2;ctx.strokeRect(bx,by,140,7);
+        ctx.fillStyle='#baf264';ctx.fillRect(bx+o.window[0]/1.5*140,by,(o.window[1]-o.window[0])/1.5*140,7);
+        if(inhaling()){ctx.fillStyle=open?art.yellow:art.cyan;ctx.fillRect(bx+clamp(inhaleTime/1.5,0,1)*140-2,by-4,4,15);}
+      }
+    }
+    for(const reg of regions)if(reg.top>0&&reg.top>camera+70&&reg.top<camera+viewHeight-30)stickerTag(`↑ 進入${regions[regions.indexOf(reg)+1].name}`,center(reg.top),reg.top,art.cyan);
+    if(camera<160) {
+      stickerTag('↑ 鼻腔出口 / FREE AT LAST',center(40),40,art.yellow);
+      const [l,r]=bounds(EXIT);ctx.beginPath();ctx.moveTo(l+10,EXIT);ctx.lineTo(r-10,EXIT);ctx.setLineDash([7,9]);ctx.strokeStyle=art.yellow;ctx.lineWidth=5;ctx.stroke();ctx.setLineDash([]);
+    }
+    if(!won) {
+      ctx.save();ctx.translate(body.x,body.y);ctx.rotate(body.angle);
+      stickerShape(outline,bumpFlash>0?art.paper:art.yellow,6);
+      ctx.beginPath();ctx.moveTo(-15,-4);ctx.lineTo(-7,-10);ctx.lineTo(5,-8);ctx.strokeStyle='#ffbc3c';ctx.lineWidth=2;ctx.stroke();
+      for(const x of [-7,6]) {
+        ctx.beginPath();ctx.ellipse(x,-3,4.7,5.8,0,0,Math.PI*2);ctx.fillStyle=art.ink;ctx.fill();
+        ctx.beginPath();ctx.arc(x-1.2,-5,1.5,0,Math.PI*2);ctx.fillStyle=art.paper;ctx.fill();
+      }
+      for(const x of [-13,12]){ctx.beginPath();ctx.ellipse(x,5,3.4,2,0,0,Math.PI*2);ctx.fillStyle=art.pink;ctx.fill();}
+      ctx.fillStyle=art.ink;
+      if(breathPhase==='gasp'){ctx.beginPath();ctx.ellipse(0,7,3.5,4,0,0,Math.PI*2);ctx.fill();}
+      else {ctx.beginPath();ctx.moveTo(-6,5);ctx.quadraticCurveTo(0,14,6,5);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(-4,6);ctx.lineTo(4,6);ctx.strokeStyle=art.paper;ctx.lineWidth=2;ctx.stroke();}
+      ctx.restore();
+      if(hurtFlash>0){ctx.beginPath();ctx.arc(body.x,body.y,BR+9,0,Math.PI*2);ctx.strokeStyle='#ff4c77';ctx.lineWidth=5;ctx.stroke();}
+    }
+    if(hurtFlash>0){ctx.fillStyle=`rgba(255,69,127,${hurtFlash*.3})`;ctx.fillRect(-150,camera,W+300,viewHeight);}
+    ctx.setTransform(scale,0,0,scale,ox,oy);const mapX=W+Math.max(0,ox/scale-24),top=120,mapH=viewHeight-240;
+    ctx.beginPath();ctx.moveTo(mapX,top);ctx.lineTo(mapX,top+mapH);ctx.strokeStyle='#b58de3';ctx.lineWidth=4;ctx.stroke();
+    for(const reg of regions){const y=top+(reg.top+reg.bottom)/2/H*mapH;ctx.beginPath();ctx.arc(mapX,y,5,0,Math.PI*2);ctx.fillStyle=reg.color;ctx.fill();ctx.strokeStyle=art.paper;ctx.lineWidth=2;ctx.stroke();if(ox/scale>95){ctx.font='900 11px system-ui';ctx.textAlign='right';inkText(reg.name,mapX-12,y+4);}}
+    ctx.beginPath();ctx.arc(mapX,top+body.y/H*mapH,8,0,Math.PI*2);ctx.fillStyle=art.yellow;ctx.fill();ctx.strokeStyle=art.paper;ctx.lineWidth=3;ctx.stroke();
+  }
+  function frame(now) {
+    const dt=lastTime?Math.min((now-lastTime)/1000,.05):0;lastTime=now;
+    accumulator+=dt;while(accumulator>=STEP){step(STEP);accumulator-=STEP;}
+    scale=Math.min(canvas.width/W,canvas.height/viewHeight);ox=(canvas.width-W*scale)/2;oy=(canvas.height-viewHeight*scale)/2;
+    draw(dt);updateUI();requestAnimationFrame(frame);
+  }
+  function release(){heldKeys=false;heldPointer=null;}
+  $('breath').addEventListener('pointerdown',e=>{if(e.button!==0||heldPointer!==null)return;if(won||failed)restart();heldPointer=e.pointerId;begin();$('breath').setPointerCapture(e.pointerId);e.preventDefault();});
+  for(const event of ['pointerup','pointercancel','lostpointercapture'])$('breath').addEventListener(event,e=>{if(e.pointerId===heldPointer)heldPointer=null;});
+  $('breath').addEventListener('click',e=>{if(e.detail===0&&!heldKeys){if(won||failed)restart();begin();heldKeys=true;setTimeout(()=>{heldKeys=false;},180);}});
+  window.addEventListener('keydown',e=>{if(e.code!=='Space'||e.target===$('again')||e.target===$('reset')||e.target===$('practice')||e.target===$('duo'))return;e.preventDefault();if(e.repeat)return;if(won||failed)restart();heldKeys=true;begin();});
+  window.addEventListener('keyup',e=>{if(e.code==='Space'){e.preventDefault();heldKeys=false;}});
+  window.addEventListener('blur',release);document.addEventListener('visibilitychange',()=>{if(document.hidden){release();lastTime=0;}});
+  $('duo').addEventListener('click',()=>{startDuo();$('breath').focus();});$('reset').addEventListener('click',reset);$('practice').addEventListener('click',()=>{startPractice();$('breath').focus();});$('again').addEventListener('click',()=>{restart();$('breath').focus();});
+  new ResizeObserver(resize).observe(canvas);reset();if(new URLSearchParams(location.search).has('practice'))startPractice();if(new URLSearchParams(location.search).has('duo'))startDuo();resize();requestAnimationFrame(frame);
+  if(new URLSearchParams(location.search).has('test'))window.flowTest={
+    get state(){return {body:{...body},air,flow,running,won,failed,irritation,injuries,hurtCooldown,failureReason,elapsed,collisions,held:held(),camera,cleared:[...cleared],region:regionIndex(body.y),inhaleTime,nasalLane,viewHeight,breathPhase,breathTime,gasps,practiceMode,duoMode,bodies:bodies.map(b=>({...b})),pairContacts};},
+    reset,advance(seconds){for(let i=0;i<Math.round(seconds/STEP);i++)step(STEP);updateUI();},bounds,center,radius:BR,start:START,height:H,view:VIEW,obstacles,
+    startDuo,pairManifold,collidePair,duoShapes,duoVelocity,bodyInertia,
+    seedDuo(states){startDuo();states.forEach((b,i)=>Object.assign(bodies[i],b));running=true;},
+    bodyPoints,outline,inertia,support,collide,collidePolygon,wallBounds,openings,gateGap,blocks,side:obstacleSide,structures,shelfShape,fishbonePieces,vocalShapes,neckShapes,esophagus,inEsophagus,inAirway,regions,velocityAt,inSolid,prick,
+    seedBody(state,initialAir=1){reset();Object.assign(body,state);air=clamp(initialAir,0,1);breathStartAir=air;if(air<1)breathPhase='inhale';running=true;camera=clamp(body.y-viewHeight*.62,0,H-viewHeight);updateUI();},
+    particleStats(){return particles.map(p=>({x:p.x,y:p.y,trail:p.trail.length}));},
+    input(value){heldKeys=value;begin();}
+  };
+})();
+</script>
+</body>
+</html>
