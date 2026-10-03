@@ -48,7 +48,6 @@
   #breath.active { background: var(--pink); transform: translateY(3px); box-shadow: 0 0 0 2px var(--ink), 0 3px 0 var(--ink); }
   #breath.forced { background: var(--aqua); }
   #breath strong { display: block; font-size: 20px; font-weight: 900; letter-spacing: .04em; }
-  #breath small { font-size: 10px; font-weight: 700; }
   .keyhint { text-align: center; color: var(--muted); font-size: 10px; margin: 12px 0 10px; }
   kbd { border: 2px solid var(--paper); background: var(--ink); color: var(--paper); border-radius: 5px; padding: 1px 6px; font: inherit; }
   .bottom-row { display: flex; justify-content: space-between; align-items: center; }
@@ -120,7 +119,7 @@
         <div class="breath-state"><span class="dot"></span><span id="state" role="status">待機</span></div>
       </div>
       <div class="controls">
-        <button id="breath" aria-label="按住吐氣，放開吸氣" aria-describedby="state"><strong id="button-label">↑ 吐氣</strong><small>↓ 吸氣</small></button>
+        <button id="breath" aria-label="按住吐氣，放開吸氣" aria-describedby="state"><strong id="button-label">↑ 吐氣</strong></button>
         <p class="keyhint"><kbd>SPACE</kbd></p>
         <div class="bottom-row"><button id="reset">↻ 重來</button><button id="practice">吸氣練習</button><button id="duo">雙異物</button><span id="time">00:00</span></div>
       </div>
