@@ -107,7 +107,7 @@
 </head>
 <body>
 <div class="shell">
-  <header><div class="brand"><span class="mark">≈</span> FAUST GAME JAM</div><div class="prototype">ONE BUTTON / PROTOTYPE 13</div></header>
+  <header><div class="brand"><span class="mark">≈</span> FAUST GAME JAM</div><div class="prototype">ONE BUTTON / PROTOTYPE 14</div></header>
   <main>
     <section class="stage" aria-label="從肺部到鼻腔的長途關卡">
       <canvas id="game" aria-label="按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。">請使用支援 Canvas 的瀏覽器。</canvas>
@@ -268,7 +268,7 @@
   const regionIndex = y => y>5400?0:y>3300?1:y>1700?2:3;
   let failed=false,irritation=0,hurtCooldown=0,hurtFlash=0,injuries=0,failureReason='';
   let body, heldKeys=false, heldPointer=null, running=false, won=false, air=1, flow=0, elapsed=0,practiceMode=false,duoMode=false,bodies=[],pairContacts=0;
-  let collisions=0, contact=0, bumpFlash=0, camera=H-VIEW, cleared=new Set(), impacts=[];
+  let collisions=0, contact=0, bumpFlash=0, camera=H-VIEW, cleared=new Set(), impacts=[], pairImpact=null, pairTurns=0;
   let inhaleTime=0, wasBlowing=true, nasalLane='left';
   let breathPhase='rest-exhale',breathTime=0,breathStartAir=1,gasps=0;
   const INHALE_SECONDS=2.4,GASP_SECONDS=1.8,REST_EXHALE_SECONDS=2.6;
@@ -303,7 +303,7 @@
     practiceMode=false;duoMode=false;bodies=[];pairContacts=0;
     body={x:(bounds(START)[0]+lungSplit(START)[0])/2,y:START,vx:0,vy:0,angle:-.25,omega:0};
     heldKeys=false;heldPointer=null;running=false;won=false;failed=false;irritation=0;hurtCooldown=0;hurtFlash=0;injuries=0;failureReason='';air=1;flow=0;elapsed=0;
-    collisions=0;contact=0;bumpFlash=0;impacts=[];cleared=new Set();viewHeight=1480;camera=clamp(START-viewHeight*.62,0,H-viewHeight);accumulator=0;
+    collisions=0;contact=0;bumpFlash=0;impacts=[];pairImpact=null;pairTurns=0;cleared=new Set();viewHeight=1480;camera=clamp(START-viewHeight*.62,0,H-viewHeight);accumulator=0;
     inhaleTime=0;wasBlowing=true;nasalLane='left';for(const o of obstacles)if(o.kind==='valve')o.openUntil=0;
     breathPhase='rest-exhale';breathTime=0;breathStartAir=1;gasps=0;
     particles=Array.from({length:90},()=>newParticle());
@@ -364,8 +364,8 @@
   function startDuo() {
     reset();duoMode=true;
     bodies=[{...body,size:1,mass:1,color:art.yellow,name:'黃',escaped:false,nasalLane:'left'},
-      {x:(lungSplit(START)[1]+bounds(START)[1])/2,y:START-160,vx:0,vy:0,angle:.25,omega:0,size:.62,mass:.25,color:art.pink,name:'粉',escaped:false,nasalLane:'right'}];
-    body=bodies[0];particles=Array.from({length:90},()=>newParticle());updateUI();
+      {x:(lungSplit(START)[1]+bounds(START)[1])/2,y:START+100,vx:0,vy:0,angle:.25,omega:0,size:.62,mass:.25,color:art.pink,name:'粉',escaped:false,nasalLane:'right'}];
+    body=bodies[0];viewHeight=720;camera=clamp(START+50-viewHeight*.55,0,H-viewHeight);particles=Array.from({length:90},()=>newParticle());updateUI();
   }
   function pairManifold(a,b) {
     const pa=bodyPoints(a),pb=bodyPoints(b);let depth=Infinity,nx=0,ny=0;
@@ -400,10 +400,15 @@
     const apply=(j,ax,ay)=>{a.vx-=j*ax*ma;a.vy-=j*ay*ma;a.omega-=(ra.x*ay-ra.y*ax)*j*ia;b.vx+=j*ax*mb;b.vy+=j*ay*mb;b.omega+=(rb.x*ay-rb.y*ax)*j*ib;};
     const leverA=ra.x*ny-ra.y*nx,leverB=rb.x*ny-rb.y*nx,closing=speed(nx,ny);
     if(closing<0) {
+      const before=[a.omega,b.omega];
       const impulse=-(1+(closing< -28?.38:0))*closing/(ma+mb+leverA**2*ia+leverB**2*ib);
       apply(impulse,nx,ny);
       const tx=-ny,ty=nx,ta=ra.x*ty-ra.y*tx,tb=rb.x*ty-rb.y*tx;
       apply(clamp(-speed(tx,ty)/(ma+mb+ta**2*ia+tb**2*ib),-.18*impulse,.18*impulse),tx,ty);
+      const turns=[a,b].map((b,i)=>({name:b.name,x:b.x,y:b.y,angle:b.angle,size:b.size,color:b.color,spin:b.omega-before[i]}));
+      const turning=turns.some(t=>Math.abs(t.spin)>.5);
+      if(turning)pairTurns++;
+      if((impulse>1||turning)&&(!pairImpact||pairImpact.life<.4))pairImpact={x,y,life:.65,turning,turns};
     }
     const correction=(m.depth+.001)/(ma+mb);
     a.x-=nx*correction*ma;a.y-=ny*correction*ma;b.x+=nx*correction*mb;b.y+=ny*correction*mb;
@@ -444,14 +449,15 @@
     body=live.reduce((rear,b)=>b.y>rear.y?b:rear,live[0]||bodies[0]);nasalLane=body.nasalLane;
     for(const o of obstacles)if(bodies.every(b=>b.escaped||b.y<o.y-(o.kind==='neck'?145:80)))cleared.add(o.id);
     const low=Math.max(...live.map(b=>b.y),EXIT),high=Math.min(...live.map(b=>b.y),low);
-    const targetView=Math.min(H,Math.max([1480,960,1180,1380][regionIndex(body.y)],low-high+360));
+    const targetView=Math.min(H,Math.max(720,low-high+360));
     viewHeight+=(targetView-viewHeight)*Math.min(1,dt*3);
     camera+=(clamp((low+high)/2-viewHeight*.55,0,H-viewHeight)-camera)*Math.min(1,dt*5);
     if(bodies.every(b=>b.escaped)&&!failed)finish();
   }
   function drawCharacter(b) {
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);ctx.scale(b.size,b.size);
-    stickerShape(outline,b.color,5);
+    stickerShape(outline,pairImpact&&pairImpact.life>.5&&pairImpact.turns.some(t=>t.name===b.name)?art.paper:b.color,5);
+    ctx.beginPath();ctx.moveTo(-15,-4);ctx.lineTo(-8,-9);ctx.lineTo(-1,-7);ctx.strokeStyle=pairImpact&&pairImpact.life>.5?art.ink:art.paper;ctx.lineWidth=3;ctx.stroke();
     for(const x of [-7,6]){ctx.beginPath();ctx.ellipse(x,-3,4.7,5.8,0,0,Math.PI*2);ctx.fillStyle=art.ink;ctx.fill();ctx.beginPath();ctx.arc(x-1,-5,1.5,0,Math.PI*2);ctx.fillStyle=art.paper;ctx.fill();}
     ctx.beginPath();ctx.moveTo(-5,6);ctx.quadraticCurveTo(0,12,5,6);ctx.strokeStyle=art.ink;ctx.lineWidth=2;ctx.stroke();ctx.restore();
   }
@@ -680,7 +686,7 @@
   }
   function step(dt) {
     if(!running||won||failed)return;
-    elapsed+=dt;for(const impact of impacts)impact.life-=dt;impacts=impacts.filter(p=>p.life>0);contact=Math.max(0,contact-dt);bumpFlash=Math.max(0,bumpFlash-dt);hurtCooldown=Math.max(0,hurtCooldown-dt);hurtFlash=Math.max(0,hurtFlash-dt);
+    elapsed+=dt;if(pairImpact){pairImpact.life-=dt;if(pairImpact.life<=0)pairImpact=null;}for(const impact of impacts)impact.life-=dt;impacts=impacts.filter(p=>p.life>0);contact=Math.max(0,contact-dt);bumpFlash=Math.max(0,bumpFlash-dt);hurtCooldown=Math.max(0,hurtCooldown-dt);hurtFlash=Math.max(0,hurtFlash-dt);
     const target=breathe(dt),exhaling=blowing();
     if(exhaling&&!wasBlowing)for(const valve of obstacles)if(valve.kind==='valve'&&(duoMode?bodies.some(b=>!b.escaped&&Math.abs(b.y-valve.y)<300):Math.abs(body.y-valve.y)<300)) {
       valve.openUntil=inhaleTime>=valve.window[0]&&inhaleTime<=valve.window[1]?elapsed+2.3:0;
@@ -702,6 +708,7 @@
     if(won)return duoMode?'兩個都排出了！完整旅程，這一口是自由。':practiceMode?'窄口突破！吸氣可以改變位置，也能幫你脫困。':'從肺部，到鼻腔。這一口是自由。';
     if(!running)return duoMode?'兩側肺部出發，共用呼吸。聲帶、薄膜、食道和鼻甲都要通過。':practiceMode?'先吐氣接近窄口。卡住後吸氣退回寬腔，碰到斜坡再吐氣。':'從左側肺泡腔出發，沿支氣管向上匯流。';
     if(breathPhase==='gasp')return '氣量耗盡，必須吸完這一大口。吸氣會把異物往肺部帶。';
+    if(duoMode&&pairImpact&&pairImpact.turning&&pairImpact.life>.25)return '擦撞換角！看異物翻轉，再抓下一口氣。';
     if(inEsophagus(focus.x,focus.y)&&focus.x>bounds(focus.y)[1]+18)return '滑進食道了！這裡沒有氣流，正被吞嚥收縮帶往下。';
     if(focus.y>2970&&focus.y<3120)return '咽喉岔口：右側食道往下，沿有流線的氣道往上。';
     const o=upcoming(focus);
@@ -982,7 +989,27 @@
       stickerTag('↑ 鼻腔出口 / FREE AT LAST',center(40),40,art.yellow);
       const [l,r]=bounds(EXIT);ctx.beginPath();ctx.moveTo(l+10,EXIT);ctx.lineTo(r-10,EXIT);ctx.setLineDash([7,9]);ctx.strokeStyle=art.yellow;ctx.lineWidth=5;ctx.stroke();ctx.setLineDash([]);
     }
-    if(duoMode){for(const b of bodies)if(!b.escaped)drawCharacter(b);}
+    if(duoMode){
+      if(pairImpact) {
+        const age=1-pairImpact.life/.65;
+        ctx.save();ctx.globalAlpha=(1-age)*.45;
+        for(const t of pairImpact.turns){ctx.save();ctx.translate(t.x,t.y);ctx.rotate(t.angle);ctx.scale(t.size,t.size);ctx.beginPath();polygonPath(outline);ctx.strokeStyle=t.color;ctx.lineWidth=5;ctx.stroke();ctx.restore();}
+        ctx.globalAlpha=1-age;
+        for(let i=0;i<8;i++){const a=i*Math.PI/4,r=8+age*30;ctx.beginPath();ctx.moveTo(pairImpact.x+Math.cos(a)*r,pairImpact.y+Math.sin(a)*r);ctx.lineTo(pairImpact.x+Math.cos(a)*(r+10),pairImpact.y+Math.sin(a)*(r+10));ctx.strokeStyle=i%2?art.cyan:art.yellow;ctx.lineWidth=4;ctx.stroke();}
+        stickerTag(pairImpact.turning?'擦撞換角！':'碰！',pairImpact.x,pairImpact.y-45-age*20,art.paper);ctx.restore();
+      }
+      for(const b of bodies)if(!b.escaped) {
+        drawCharacter(b);
+        const t=pairImpact?.turns.find(t=>t.name===b.name);
+        if(t&&Math.abs(t.spin)>.5&&Math.abs(b.omega)>.05) {
+          const sign=Math.sign(b.omega),r=BR*b.size+8,start=b.angle+.3,end=start+sign*1.9;
+          ctx.save();ctx.globalAlpha=pairImpact.life/.65;ctx.strokeStyle=art.cyan;ctx.lineWidth=3;
+          ctx.beginPath();ctx.arc(b.x,b.y,r,start,end,sign<0);ctx.stroke();
+          const x=b.x+Math.cos(end)*r,y=b.y+Math.sin(end)*r,a=end+sign*Math.PI/2;
+          ctx.beginPath();ctx.moveTo(x-8*Math.cos(a-.55),y-8*Math.sin(a-.55));ctx.lineTo(x,y);ctx.lineTo(x-8*Math.cos(a+.55),y-8*Math.sin(a+.55));ctx.stroke();ctx.restore();
+        }
+      }
+    }
     else if(!won) {
       ctx.save();ctx.translate(body.x,body.y);ctx.rotate(body.angle);
       stickerShape(outline,bumpFlash>0?art.paper:art.yellow,6);
@@ -1020,7 +1047,7 @@
   $('duo').addEventListener('click',()=>{startDuo();$('breath').focus();});$('reset').addEventListener('click',reset);$('practice').addEventListener('click',()=>{startPractice();$('breath').focus();});$('again').addEventListener('click',()=>{restart();$('breath').focus();});
   new ResizeObserver(resize).observe(canvas);reset();if(new URLSearchParams(location.search).has('practice'))startPractice();if(new URLSearchParams(location.search).has('duo'))startDuo();resize();requestAnimationFrame(frame);
   if(new URLSearchParams(location.search).has('test'))window.flowTest={
-    get state(){return {body:{...body},air,flow,running,won,failed,irritation,injuries,hurtCooldown,failureReason,elapsed,collisions,held:held(),camera,cleared:[...cleared],region:regionIndex(body.y),inhaleTime,nasalLane,viewHeight,breathPhase,breathTime,gasps,practiceMode,duoMode,bodies:bodies.map(b=>({...b})),pairContacts};},
+    get state(){return {body:{...body},air,flow,running,won,failed,irritation,injuries,hurtCooldown,failureReason,elapsed,collisions,held:held(),camera,cleared:[...cleared],region:regionIndex(body.y),inhaleTime,nasalLane,viewHeight,breathPhase,breathTime,gasps,practiceMode,duoMode,bodies:bodies.map(b=>({...b})),pairContacts,pairTurns,pairImpact:pairImpact?{...pairImpact,turns:pairImpact.turns.map(t=>({...t}))}:null};},
     reset,advance(seconds){for(let i=0;i<Math.round(seconds/STEP);i++)step(STEP);updateUI();},bounds,center,radius:BR,start:START,height:H,view:VIEW,obstacles,
     startDuo,pairManifold,collidePair,bodyInertia,applyAirDrag,integrateBody,
     seedDuo(states){startDuo();states.forEach((b,i)=>Object.assign(bodies[i],b));running=true;},
