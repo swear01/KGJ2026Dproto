@@ -335,6 +335,33 @@ const { chromium } = require('playwright');
       return b;
     }));
     assert(falling.every(b=>b.y>5130&&b.vy>120&&b.angle===.4),'Zero airflow must accelerate both sizes into a noticeable fall without an orientation force');
+    const cooperative=await page.evaluate(()=>{
+      const trials=[];
+      for(const enabled of [true,false]) {
+        flowTest.startDuo();flowTest.input(true);let clear=true;
+        for(let i=0;i<360;i++) {
+          flowTest.advance(1/120,enabled);
+          for(const b of flowTest.state.bodies) {
+            const pts=flowTest.bodyPoints(b);
+            for(let j=0;j<pts.length;j++)for(const t of [0,.25,.5,.75]) {
+              const a=pts[j],q=pts[(j+1)%pts.length];if(flowTest.inSolid(a.x+(q.x-a.x)*t,a.y+(q.y-a.y)*t))clear=false;
+            }
+          }
+        }
+        trials.push({rescued:flowTest.pocketRescued(),clear,state:flowTest.state});
+      }
+      flowTest.seedDuo([{escaped:true},{}]);let stationaryClear=true;
+      for(let i=0;i<1200;i++) {
+        flowTest.input((i%100)<60);flowTest.advance(.05,false);
+        for(const p of flowTest.bodyPoints(flowTest.state.bodies[1]))if(flowTest.inSolid(p.x,p.y))stationaryClear=false;
+      }
+      const b=flowTest.state.bodies[1];
+      return {trials,alone:flowTest.state,stationaryClear,wind:flowTest.velocityAt(b.x,b.y,0,1),inside:flowTest.inPocket(b.x,b.y)};
+    });
+    assert(cooperative.trials[0].rescued&&cooperative.trials[0].state.pairContacts>0&&!cooperative.trials[0].state.failed,'Actual mutual contact must release the pink body from the existing lung pocket');
+    assert(!cooperative.trials[1].rescued&&cooperative.trials[1].state.pairContacts===0&&!cooperative.trials[1].state.failed,'The identical three-second exhale must fail to release pink when only mutual contact is disabled');
+    assert(cooperative.trials.every(t=>t.clear),'Both outlines must clear the pocket tissue throughout rescue and the control trial');
+    assert(cooperative.inside&&!cooperative.alone.won&&cooperative.stationaryClear&&cooperative.wind.x===0&&cooperative.wind.y===0,'Sixty seconds of breathing without a helper cannot release the sheltered body');
     const duoChecks=await page.evaluate(()=>{
       const input=value=>window.dispatchEvent(new KeyboardEvent(value?'keydown':'keyup',{code:'Space'}));
       flowTest.startDuo();input(true);flowTest.advance(60);const heldLong=flowTest.state;
@@ -377,6 +404,7 @@ const { chromium } = require('playwright');
     assert(duoChecks.victory.won&&!duoChecks.victory.failed&&duoChecks.victory.bodies.every(b=>b.escaped),'A keyboard-only breathing route must free both bodies through the full map');
     assert(duoChecks.clearance&&duoChecks.maxOverlap<.05,`Both outlines must clear the organ solids and one another: ${JSON.stringify({clear:duoChecks.clearance,overlap:duoChecks.maxOverlap,firstBad:duoChecks.firstBad})}`);
     assert(duoChecks.firstContact!==null&&duoChecks.firstTurn!==null&&duoChecks.firstContact<10&&duoChecks.firstTurn<15,'Natural keyboard play must produce an early mutual contact and collision torque before the trachea');
+    assert(duoChecks.victory.cleared.includes('pocket'),'Both bodies must clear the cooperative pocket before completing the full map');
     assert(duoChecks.contactView<760,'The camera must show nearby colliding bodies at a readable scale');
     assert(duoChecks.turnEffect?.turning&&duoChecks.turnEffect.turns.some(t=>Math.abs(t.spin)>.5),'Turning feedback must correspond to an actual collision impulse changing angular velocity');
     assert.equal(await page.locator('#progress').textContent(),'2 / 2');
@@ -447,7 +475,9 @@ const { chromium } = require('playwright');
     assert(duoButton.y+duoButton.height<=844&&await touch.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Two-body HUD and breath control must fit mobile');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:duoButton.x+40,y:duoButton.y+25}]});
     await touch.evaluate(()=>flowTest.advance(.5));
-    assert(await touch.evaluate(()=>flowTest.state.bodies.every((b,i)=>b.y<(i===0?6600:6700))),'Touch exhale must drive both objects through the shared field');
+    assert(await touch.evaluate(()=>{const [helper,trapped]=flowTest.state.bodies;return helper.y<6600&&flowTest.inPocket(trapped.x,trapped.y);}),'Touch exhale must move the helper while the sheltered body initially stays trapped');
+    await touch.evaluate(()=>flowTest.advance(2.5));
+    assert(await touch.evaluate(()=>flowTest.pocketRescued()&&flowTest.state.pairContacts>0),'Holding the mobile breath control must physically rescue the trapped body');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
     assert.equal(await touch.evaluate(()=>flowTest.state.held),false);
     await touch.locator('#duo').click();
@@ -465,7 +495,7 @@ const { chromium } = require('playwright');
       await page.screenshot({ path: process.env.FLOW_SCREENSHOT, fullPage: true });
       await touch.screenshot({ path: process.env.FLOW_SCREENSHOT.replace(/\.png$/, '-mobile.png'), fullPage: true });
     }
-    console.log(`PASS: off-center roof rebound grace and small-body membrane corner separation; faster zero-flow falling for both masses; full-map two-body keyboard victory (${duoChecks.victory.elapsed.toFixed(1)}s), four organs/twelve obstacles for both, early natural mutual contact/turning feedback, following camera, restored esophagus/membrane/floor hazards, contact mass/momentum/energy/torque, independent escape retention and mobile controls; constant-exhale neck wedging, inhale retreat/ramp torque/real slot clearance, practice victory/retry/full-level return, free-flight orientation/no inhale unlock, nonlinear refill/airflow, uninterruptible empty-air gasp/full recovery, gentle automatic breathing, forced keyboard/touch HUD and reset, irregular outline/angle-dependent clearance, contact torque/friction/energy bounds, elastic curved walls/low-speed settling, fast fishbone contact, paired vocal folds, bilateral concha passages, esophageal failure/retry, release inertia, flow/reversal/recirculation, pulmonary and three-prick failure/cooldown, four-organ victory (${victory.elapsed.toFixed(1)}s, ${victory.injuries} pricks / ${routes.count} obstacles) with full-outline clearance, particle trails/solids, keyboard/pointer/blur, mobile touch/cancel; no runtime errors.`);
+    console.log(`PASS: existing lung pocket rescue requires mutual contact under identical input; sixty-second no-helper control remains trapped; off-center roof rebound grace and small-body membrane corner separation; faster zero-flow falling for both masses; full-map two-body keyboard victory (${duoChecks.victory.elapsed.toFixed(1)}s), four organs/twelve obstacles for both, early natural mutual contact/turning feedback, following camera, restored esophagus/membrane/floor hazards, contact mass/momentum/energy/torque, independent escape retention and mobile controls; constant-exhale neck wedging, inhale retreat/ramp torque/real slot clearance, practice victory/retry/full-level return, free-flight orientation/no inhale unlock, nonlinear refill/airflow, uninterruptible empty-air gasp/full recovery, gentle automatic breathing, forced keyboard/touch HUD and reset, irregular outline/angle-dependent clearance, contact torque/friction/energy bounds, elastic curved walls/low-speed settling, fast fishbone contact, paired vocal folds, bilateral concha passages, esophageal failure/retry, release inertia, flow/reversal/recirculation, pulmonary and three-prick failure/cooldown, four-organ victory (${victory.elapsed.toFixed(1)}s, ${victory.injuries} pricks / ${routes.count} obstacles) with full-outline clearance, particle trails/solids, keyboard/pointer/blur, mobile touch/cancel; no runtime errors.`);
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));
