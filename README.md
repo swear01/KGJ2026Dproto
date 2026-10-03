@@ -2,7 +2,7 @@
 
 [線上遊玩](https://swear01.github.io/KGJ2026Dproto/) · [吸氣練習](https://swear01.github.io/KGJ2026Dproto/?practice) · [雙異物短關卡](https://swear01.github.io/KGJ2026Dproto/?duo)
 
-GitHub Pages 從 `main` 分支根目錄發布，更新 `index.html` 並推送後會自動重新部署。支援具備 Canvas `roundRect` 與現代 JavaScript API 的新版桌面及手機瀏覽器。
+GitHub Pages 目前從 `publish-pages` 分支根目錄發布，更新 `index.html` 並推送到此分支後會自動重新部署。支援具備 Canvas `roundRect` 與現代 JavaScript API 的新版桌面及手機瀏覽器。
 
 Faust Game Jam 單鍵玩法 prototype 10。從肺部一路經過氣管、咽喉到鼻腔，用呼吸將黃色異物排出。地圖高 7,000 單位，超過七個標準鏡頭高度，肺部與鼻腔會拉遠鏡頭顯示構造；鏡頭跟隨異物，右側小地圖保留完整旅程。
 
