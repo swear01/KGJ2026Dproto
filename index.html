@@ -107,7 +107,7 @@
 </head>
 <body>
 <div class="shell">
-  <header><div class="brand"><span class="mark">≈</span> FAUST GAME JAM</div><div class="prototype">ONE BUTTON / PROTOTYPE 14</div></header>
+  <header><div class="brand"><span class="mark">≈</span> FAUST GAME JAM</div><div class="prototype">ONE BUTTON / PROTOTYPE 15</div></header>
   <main>
     <section class="stage" aria-label="從肺部到鼻腔的長途關卡">
       <canvas id="game" aria-label="按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。">請使用支援 Canvas 的瀏覽器。</canvas>
@@ -202,6 +202,21 @@
     const a=[],b=[];for(let y=top;y<=bottom;y+=10){const [l,r]=split(y);a.push({x:l,y});b.push({x:r,y});}
     return [...a,...b.reverse()];
   }
+  const pocket={x:175,top:6385,floor:6420,width:64,gap:16};
+  const pocketRects=[{x:pocket.x-pocket.width/2,y:pocket.top,w:7,h:pocket.floor-pocket.top+3},
+    {x:pocket.x+pocket.width/2-7,y:pocket.top,w:7,h:pocket.floor-pocket.top+3},
+    {x:pocket.x-pocket.width/2,y:pocket.floor,w:(pocket.width-pocket.gap)/2,h:.5},
+    {x:pocket.x+pocket.gap/2,y:pocket.floor,w:(pocket.width-pocket.gap)/2,h:.5}];
+  const pocketShapes=pocketRects.map(r=>[{x:r.x,y:r.y},{x:r.x+r.w,y:r.y},{x:r.x+r.w,y:r.y+r.h},{x:r.x,y:r.y+r.h}]);
+  pocketShapes[2][3].y+=24;pocketShapes[3][2].y+=24;
+  const pocketAttachment=[{x:pocket.x-pocket.width/2,y:pocket.top+12},{x:bounds(pocket.top+12)[0]-12,y:pocket.top+2},
+    {x:bounds(pocket.floor)[0]-12,y:pocket.floor-5},{x:pocket.x-pocket.width/2,y:pocket.floor+6}];
+  pocketShapes.push(pocketAttachment);
+  const pocketLining=[[{x:pocket.x-pocket.width/2,y:pocket.top},{x:pocket.x-pocket.width/2+7,y:pocket.top},
+    {x:pocket.x-pocket.width/2+7,y:pocket.floor},{x:pocket.x-pocket.gap/2,y:pocket.floor},
+    {x:pocket.x-pocket.gap/2,y:pocket.floor+.5},{x:pocket.x-pocket.width/2,y:pocket.floor+24.5}]];
+  pocketLining.push(pocketLining[0].map(p=>({x:2*pocket.x-p.x,y:p.y})));
+  const inPocket=(x,y)=>duoMode&&x>pocket.x-pocket.width/2+7&&x<pocket.x+pocket.width/2-7&&y>=pocket.top&&y<=pocket.floor+3;
   const structures=[{id:'lung-fissure',top:6020,bottom:6900,points:dividerPolygon(6020,6900,lungSplit)},
     {id:'nasal-septum',top:120,bottom:1650,points:dividerPolygon(120,1650,nasalSplit)}];
   function laneBounds(y,lane='left') {
@@ -360,12 +375,13 @@
     return [left,left.map(p=>({x:2*c-p.x,y:p.y}))];
   }
   function polygonPath(points) {ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.closePath();}
+  const pocketRescued=()=>duoMode&&bodyPoints(bodies[1]).every(p=>p.y<pocket.top);
   function bodyInertia(b){return inertia*(b.size||1)**2;}
   function startDuo() {
     reset();duoMode=true;
     bodies=[{...body,size:1,mass:1,color:art.yellow,name:'黃',escaped:false,nasalLane:'left'},
-      {x:(lungSplit(START)[1]+bounds(START)[1])/2,y:START+100,vx:0,vy:0,angle:.25,omega:0,size:.62,mass:.25,color:art.pink,name:'粉',escaped:false,nasalLane:'right'}];
-    body=bodies[0];viewHeight=720;camera=clamp(START+50-viewHeight*.55,0,H-viewHeight);particles=Array.from({length:90},()=>newParticle());updateUI();
+      {x:pocket.x,y:pocket.floor-12,vx:0,vy:0,angle:.25,omega:0,size:.62,mass:.25,color:art.pink,name:'粉',escaped:false,nasalLane:'right'}];
+    body=bodies[0];viewHeight=Math.max(720,START-pocket.top+360);camera=clamp((START+pocket.floor)/2-viewHeight*.55,0,H-viewHeight);particles=Array.from({length:90},()=>newParticle());updateUI();
   }
   function pairManifold(a,b) {
     const pa=bodyPoints(a),pb=bodyPoints(b);let depth=Infinity,nx=0,ny=0;
@@ -430,7 +446,7 @@
     b.vy+=(GRAVITY+(swallowed?150:0))*dt;
     b.omega*=Math.exp(-.65*dt);b.angle+=b.omega*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;
   }
-  function stepDuo(dt) {
+  function stepDuo(dt,pairEnabled=true) {
     for(const b of bodies)if(!b.escaped) {
       body=b;if(b.y>1650)b.nasalLane=b.x<center(1650)?'left':'right';nasalLane=b.nasalLane;
       const swallowed=inEsophagus(b.x,b.y)&&b.x>bounds(b.y)[1]+18;
@@ -439,7 +455,7 @@
     let touched=false;
     for(let pass=0;pass<8&&!failed;pass++) {
       for(const b of bodies)if(!b.escaped){body=b;nasalLane=b.nasalLane;collide();}
-      const pairHit=collidePair(bodies[0],bodies[1]);touched=pairHit||touched;
+      const pairHit=pairEnabled&&collidePair(bodies[0],bodies[1]);touched=pairHit||touched;
       if(!pairHit)break;
     }
     for(const b of bodies)if(!b.escaped){body=b;nasalLane=b.nasalLane;collide();}
@@ -447,6 +463,7 @@
     for(const b of bodies)if(!b.escaped&&Math.max(...bodyPoints(b).map(p=>p.y))<EXIT)b.escaped=true;
     const live=bodies.filter(b=>!b.escaped);
     body=live.reduce((rear,b)=>b.y>rear.y?b:rear,live[0]||bodies[0]);nasalLane=body.nasalLane;
+    if(pocketRescued()&&bodyPoints(bodies[0]).every(p=>p.y<pocket.top))cleared.add('pocket');
     for(const o of obstacles)if(bodies.every(b=>b.escaped||b.y<o.y-(o.kind==='neck'?145:80)))cleared.add(o.id);
     const low=Math.max(...live.map(b=>b.y),EXIT),high=Math.min(...live.map(b=>b.y),low);
     const targetView=Math.min(H,Math.max(720,low-high+360));
@@ -541,10 +558,12 @@
     return resolve(nx,ny,point.distance+(inside?p.d:-p.d),point,bounce,friction,false,roofBounce);
   }
   function collideRect(rect) {
-    const shape=bodyPoints(),corners=[{x:rect.x,y:rect.y},{x:rect.x+rect.w,y:rect.y},{x:rect.x+rect.w,y:rect.y+rect.h},{x:rect.x,y:rect.y+rect.h}];
-    const axes=[{x:1,y:0},{x:0,y:1}];
-    for(let i=0;i<shape.length;i++) {
-      const a=shape[i],b=shape[(i+1)%shape.length],length=Math.hypot(b.x-a.x,b.y-a.y);
+    return collideConvex([{x:rect.x,y:rect.y},{x:rect.x+rect.w,y:rect.y},{x:rect.x+rect.w,y:rect.y+rect.h},{x:rect.x,y:rect.y+rect.h}]);
+  }
+  function collideConvex(corners) {
+    const shape=bodyPoints(),axes=[];
+    for(const polygon of [corners,shape])for(let i=0;i<polygon.length;i++) {
+      const a=polygon[i],b=polygon[(i+1)%polygon.length],length=Math.hypot(b.x-a.x,b.y-a.y);
       axes.push({x:-(b.y-a.y)/length,y:(b.x-a.x)/length});
     }
     let contact=null;
@@ -571,6 +590,7 @@
   function collide() {
     let hit=false;
     for(let pass=0;pass<5;pass++) {
+      if(duoMode&&body.y>pocket.top-BR&&body.y<pocket.floor+25+BR)for(const shape of pocketShapes)if(collideConvex(shape))hit=true;
       for(let side=0;side<2;side++) {
         const wall=walls[side],from=Math.max(0,Math.floor((body.y-40-BR*2)/5)),to=Math.min(wall.length-1,Math.ceil((body.y-40+BR*2)/5));
         for(let i=from;i<to;i++) {
@@ -650,7 +670,8 @@
     if(x>bounds(y)[1]&&inEsophagus(x,y))return {x:0,y:0};
     const h=3,vx=(stream(x,y+h,t)-stream(x,y-h,t))/(2*h),vy=-(stream(x+h,y,t)-stream(x-h,y,t))/(2*h);
     const limiter=Math.min(1,430/Math.max(1,Math.hypot(vx,vy))),pulse=1+.045*Math.sin(t*8);
-    return {x:vx*limiter*pressure*pulse,y:vy*limiter*pressure*pulse};
+    const exposure=inPocket(x,y)?clamp((pocket.top+12-y)/12,0,1):1;
+    return {x:vx*limiter*pressure*pulse*exposure,y:vy*limiter*pressure*pulse*exposure};
   }
   function pointInPolygon(x,y,points) {
     let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++) {
@@ -659,6 +680,7 @@
   }
   function inSolid(x,y) {
     if(!inAirway(x,y)||y>6900)return true;
+    if(duoMode&&y>=pocket.top&&y<=pocket.floor+25&&pocketShapes.some(s=>pointInPolygon(x,y,s)))return true;
     for(const s of structures)if(y>=s.top&&y<=s.bottom&&pointInPolygon(x,y,s.points))return true;
     for(const o of obstacles)if(Math.abs(y-o.y)<(o.kind==='neck'?250:110)) {
       if(o.kind==='shelf') {
@@ -684,7 +706,7 @@
       p.trail.push({x:p.x,y:p.y});if(p.trail.length>24)p.trail.shift();p.x=x;p.y=y;
     }
   }
-  function step(dt) {
+  function step(dt,pairEnabled=true) {
     if(!running||won||failed)return;
     elapsed+=dt;if(pairImpact){pairImpact.life-=dt;if(pairImpact.life<=0)pairImpact=null;}for(const impact of impacts)impact.life-=dt;impacts=impacts.filter(p=>p.life>0);contact=Math.max(0,contact-dt);bumpFlash=Math.max(0,bumpFlash-dt);hurtCooldown=Math.max(0,hurtCooldown-dt);hurtFlash=Math.max(0,hurtFlash-dt);
     const target=breathe(dt),exhaling=blowing();
@@ -693,7 +715,7 @@
     }
     inhaleTime=inhaling()?inhaleTime+dt:0;wasBlowing=exhaling;
     flow+=(target-flow)*Math.min(1,dt*5);
-    if(duoMode){stepDuo(dt);return;}
+    if(duoMode){stepDuo(dt,pairEnabled);return;}
     if(body.y>1650)nasalLane=body.x<center(1650)?'left':'right';
     const swallowed=inEsophagus(body.x,body.y)&&body.x>bounds(body.y)[1]+18;
     integrateBody(body,velocityAt(body.x,body.y),dt,swallowed);collide();
@@ -706,10 +728,14 @@
     const focus=duoMode?bodies.filter(b=>!b.escaped).reduce((front,b)=>b.y<front.y?b:front,body):body;
     if(failed)return failureReason==='irritation'?'三次刺碰，挑戰失敗。重新找一條流線。':failureReason==='esophagus'?'進了食道。下一次沿有流線的氣道前進。':'異物掉回肺底。重新抓住吐氣節奏。';
     if(won)return duoMode?'兩個都排出了！完整旅程，這一口是自由。':practiceMode?'窄口突破！吸氣可以改變位置，也能幫你脫困。':'從肺部，到鼻腔。這一口是自由。';
-    if(!running)return duoMode?'兩側肺部出發，共用呼吸。聲帶、薄膜、食道和鼻甲都要通過。':practiceMode?'先吐氣接近窄口。卡住後吸氣退回寬腔，碰到斜坡再吐氣。':'從左側肺泡腔出發，沿支氣管向上匯流。';
+    if(!running)return duoMode?'粉被困在肺泡回流凹袋。先用黃從袋底撞出它，再一起到鼻腔。':practiceMode?'先吐氣接近窄口。卡住後吸氣退回寬腔，碰到斜坡再吐氣。':'從左側肺泡腔出發，沿支氣管向上匯流。';
     if(breathPhase==='gasp')return '氣量耗盡，必須吸完這一大口。吸氣會把異物往肺部帶。';
-    if(duoMode&&pairImpact&&pairImpact.turning&&pairImpact.life>.25)return '擦撞換角！看異物翻轉，再抓下一口氣。';
     if(inEsophagus(focus.x,focus.y)&&focus.x>bounds(focus.y)[1]+18)return '滑進食道了！這裡沒有氣流，正被吞嚥收縮帶往下。';
+    if(duoMode&&body.y>pocket.top-120){
+      if(!pocketRescued())return body.y>pocket.floor+120?'粉困在無風的凹袋。吐氣把黃送到袋底，撞出粉！':'黃到袋底了。短吸氣退開換角，再吐氣撞上去！';
+      return '粉脫困了！黃若卡在袋底，短吸退開，再沿旁邊流線上去。';
+    }
+    if(duoMode&&pairImpact&&pairImpact.turning&&pairImpact.life>.25)return '擦撞換角！看異物翻轉，再抓下一口氣。';
     if(focus.y>2970&&focus.y<3120)return '咽喉岔口：右側食道往下，沿有流線的氣道往上。';
     const o=upcoming(focus);
     if(o&&focus.y<o.y+480) {
@@ -732,7 +758,7 @@
     $('subtitle').textContent=duoMode?'同一口氣，兩個異物':practiceMode?'吸氣練習':'一口自由';$('progress-label').textContent=duoMode?'已排出異物':practiceMode?'窄口突破':'距離自由';$('reset').textContent=practiceMode||duoMode?'← 完整關卡':'↻ 重新開始';
     $('progress').textContent=duoMode?`${bodies.filter(b=>b.escaped).length} / 2`:progress;
     $('progress').nextElementSibling.hidden=duoMode;$('progress-fill').style.width=(duoMode?bodies.filter(b=>b.escaped).length*50:progress)+'%';
-    document.querySelector('.intro').innerHTML=duoMode?'黃大、粉小，共用一口呼吸。<br>從肺到鼻腔，兩個都要排出。':'從肺部，一路到鼻腔。<br>每個阻礙，都需要不同的一口氣。';
+    document.querySelector('.intro').innerHTML=duoMode?'粉困在回流凹袋，先用黃撞出它。<br>再一起從肺到鼻腔，兩個都要排出。':'從肺部，一路到鼻腔。<br>每個阻礙，都需要不同的一口氣。';
     canvas.setAttribute('aria-label',duoMode?'雙異物關卡：按住吐氣、放開吸氣，同時引導黃色和粉紅異物到出口。':'按住空白鍵吐氣，放開吸氣，將黃色異物從上方排出。');
     $('irritation').textContent=irritation;$('irritation-fill').style.width=irritation+'%';
     $('air').textContent=Math.ceil(air*100);$('air-fill').style.width=air*100+'%';
@@ -941,6 +967,13 @@
       ctx.beginPath();const [l,r]=bounds(6900);ctx.moveTo(l,6900);ctx.lineTo(r,6900);ctx.strokeStyle=art.ink;ctx.lineWidth=14;ctx.stroke();ctx.strokeStyle=art.paper;ctx.lineWidth=5;ctx.stroke();
     }
     drawStructures();drawOrganTextures();drawEsophagus();
+    if(duoMode&&camera<pocket.floor+150&&camera+viewHeight>pocket.top-100) {
+      ctx.fillStyle='#194574';ctx.fillRect(pocket.x-pocket.width/2+7,pocket.top,pocket.width-14,pocket.floor-pocket.top);
+      stickerShape(pocketAttachment,regions[0].color,5);drawTissueSurface(pocketAttachment,'lung');
+      for(const shape of pocketLining){stickerShape(shape,'#ff9ecb',3);drawTissueSurface(shape,'mucosa');}
+      stickerTag(pocketRescued()?'粉脫困了！':'肺泡回流凹袋 · 粉等救援',pocket.x,pocket.top-65,pocketRescued()?art.yellow:art.paper);
+      ctx.font='900 13px system-ui';ctx.textAlign='center';inkText('↑ 用黃撞袋底',pocket.x,pocket.floor+62,art.yellow);
+    }
     for(const impact of impacts) {
       const age=1-impact.life/.32;
       ctx.save();ctx.translate(impact.x,impact.y);ctx.rotate(Math.atan2(impact.nx,-impact.ny));ctx.globalAlpha=impact.life/.32;
@@ -1048,8 +1081,8 @@
   new ResizeObserver(resize).observe(canvas);reset();if(new URLSearchParams(location.search).has('practice'))startPractice();if(new URLSearchParams(location.search).has('duo'))startDuo();resize();requestAnimationFrame(frame);
   if(new URLSearchParams(location.search).has('test'))window.flowTest={
     get state(){return {body:{...body},air,flow,running,won,failed,irritation,injuries,hurtCooldown,failureReason,elapsed,collisions,held:held(),camera,cleared:[...cleared],region:regionIndex(body.y),inhaleTime,nasalLane,viewHeight,breathPhase,breathTime,gasps,practiceMode,duoMode,bodies:bodies.map(b=>({...b})),pairContacts,pairTurns,pairImpact:pairImpact?{...pairImpact,turns:pairImpact.turns.map(t=>({...t}))}:null};},
-    reset,advance(seconds){for(let i=0;i<Math.round(seconds/STEP);i++)step(STEP);updateUI();},bounds,center,radius:BR,start:START,height:H,view:VIEW,obstacles,
-    startDuo,pairManifold,collidePair,bodyInertia,applyAirDrag,integrateBody,
+    reset,advance(seconds,pairEnabled=true){for(let i=0;i<Math.round(seconds/STEP);i++)step(STEP,pairEnabled);updateUI();},bounds,center,radius:BR,start:START,height:H,view:VIEW,obstacles,
+    startDuo,pocket,pocketRects,pocketShapes,inPocket,pocketRescued,pairManifold,collidePair,bodyInertia,applyAirDrag,integrateBody,
     seedDuo(states){startDuo();states.forEach((b,i)=>Object.assign(bodies[i],b));running=true;},
     bodyPoints,outline,inertia,support,collide,collidePolygon,collideRect,wallBounds,openings,gateGap,blocks,side:obstacleSide,structures,shelfShape,fishbonePieces,vocalShapes,neckShapes,esophagus,inEsophagus,inAirway,regions,velocityAt,inSolid,prick,
     seedBody(state,initialAir=1){reset();Object.assign(body,state);air=clamp(initialAir,0,1);breathStartAir=air;if(air<1)breathPhase='inhale';running=true;camera=clamp(body.y-viewHeight*.62,0,H-viewHeight);updateUI();},
